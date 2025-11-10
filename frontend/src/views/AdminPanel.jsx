@@ -12,7 +12,7 @@ return (
     <div className="select-none min-h-screen bg-[#f6f9f7]">
         <AdminTopbar activeTab={activeTab} onTabChange={setActiveTab} />
 
-        <div className="mx-auto max-w-[1200px] px-5 py-8">
+        <div className="mx-auto max-w-[1400px] px-5 py-8">
         {activeTab === "reservations" && <ReservationsTab />}
         {activeTab === "courts" && <CourtsTab />}
       </div>

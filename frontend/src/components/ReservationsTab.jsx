@@ -17,6 +17,7 @@ export default function ReservationsTab() {
   const [query, setQuery] = useState("");
 
   const [courtFilter, setCourtFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState(""); // "", "upcoming", "ongoing", "completed"
 
   // --- NEW: mutually exclusive date filter mode
   const [filterMode, setFilterMode] = useState("day"); // "day" | "range"
@@ -94,6 +95,31 @@ export default function ReservationsTab() {
     return reservations.map(norm);
   }, [reservations, users]);
 
+  // === STATUS helpers (same logic as History) ===
+  function getReservationStatus(reservedAt, hours, now = Date.now()) {
+    const start = Number(reservedAt || 0);
+    const end = start + Number(hours || 0) * 60 * 60 * 1000;
+    if (now < start) return "upcoming";
+    if (now >= start && now < end) return "ongoing";
+    return "completed";
+  }
+  function statusBadgeClass(status) {
+    switch (status) {
+      case "upcoming": return "bg-blue-500";
+      case "ongoing": return "bg-red-500";
+      case "completed": return "bg-green";
+      default: return "bg-gray-500";
+    }
+  }
+  function statusLabel(status) {
+    switch (status) {
+      case "upcoming": return "Upcoming";
+      case "ongoing": return "Ongoing";
+      case "completed": return "Completed";
+      default: return "Unknown";
+    }
+  }
+
   const courtOptions = useMemo(() => {
     const set = new Set(rows.map((r) => r.courtId).filter(Boolean));
     return Array.from(set).sort((a, b) => Number(a) - Number(b));
@@ -112,12 +138,20 @@ export default function ReservationsTab() {
       toTs   = dateTo   ? new Date(dateTo).setHours(23, 59, 59, 999) : null;
     }
 
+    const now = Date.now();
+
     return rows
       .filter((r) => {
         if (courtFilter && String(r.courtId) !== String(courtFilter)) return false;
 
         if (fromTs && r.reservedAt < fromTs) return false;
         if (toTs && r.reservedAt > toTs) return false;
+
+        // NEW: status filter
+        if (statusFilter) {
+          const st = getReservationStatus(r.reservedAt, r.hours, now);
+          if (st !== statusFilter) return false;
+        }
 
         // search only by name
         if (!q) return true;
@@ -148,7 +182,7 @@ export default function ReservationsTab() {
         if (av > bv) return 1 * dir;
         return 0;
       });
-  }, [rows, query, courtFilter, filterMode, specificDay, dateFrom, dateTo, sortKey, sortDir]);
+  }, [rows, query, courtFilter, statusFilter, filterMode, specificDay, dateFrom, dateTo, sortKey, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
   const pageRows = useMemo(() => {
@@ -156,7 +190,7 @@ export default function ReservationsTab() {
     return filtered.slice(start, start + pageSize);
   }, [filtered, page]);
 
-  useEffect(() => { setPage(1); }, [query, courtFilter, filterMode, specificDay, dateFrom, dateTo]);
+  useEffect(() => { setPage(1); }, [query, courtFilter, statusFilter, filterMode, specificDay, dateFrom, dateTo]);
 
   function toggleSort(key) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -232,6 +266,21 @@ export default function ReservationsTab() {
             </select>
           </div>
 
+          {/* Status */}
+          <div className="flex flex-col gap-1 min-w-[170px]">
+            <label className="text-xs font-medium text-dark-green">Status</label>
+            <select
+              className="rounded-xl border cursor-pointer border-dark-green px-3 py-2 shadow-sm outline-none"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="">All statuses</option>
+              <option value="upcoming">Upcoming</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+
           {/* Mode switch */}
           <div className="flex flex-col gap-1 min-w-[190px]">
             <label className="text-xs font-medium text-dark-green">Date filter</label>
@@ -239,7 +288,7 @@ export default function ReservationsTab() {
               <button
                 type="button"
                 className={`px-3 py-2 text-sm font-medium transition cursor-pointer flex-1 ${filterMode === "day" ? "bg-dark-green text-white" : "bg-white text-dark-green hover:bg-dark-green/10"}`}
-                onClick={() => { setFilterMode("day"); /* clear range when switching */ setDateFrom(""); setDateTo(""); }}
+                onClick={() => { setFilterMode("day"); setDateFrom(""); setDateTo(""); }}
                 aria-pressed={filterMode === "day"}
               >
                 On (Day)
@@ -247,7 +296,7 @@ export default function ReservationsTab() {
               <button
                 type="button"
                 className={`px-3 py-2 text-sm flex-1 font-medium cursor-pointer transition border-l border-dark-green ${filterMode === "range" ? "bg-dark-green text-white" : "bg-white text-dark-green hover:bg-dark-green/10"}`}
-                onClick={() => { setFilterMode("range"); /* clear day when switching */ setSpecificDay(""); }}
+                onClick={() => { setFilterMode("range"); setSpecificDay(""); }}
                 aria-pressed={filterMode === "range"}
               >
                 From–To
@@ -296,6 +345,7 @@ export default function ReservationsTab() {
               onClick={() => {
                 setQuery("");
                 setCourtFilter("");
+                setStatusFilter("");
                 setFilterMode("day");
                 setSpecificDay("");
                 setDateFrom("");
@@ -337,6 +387,7 @@ export default function ReservationsTab() {
                     <Th>End</Th>
                     <Th>Hours</Th>
                     <Th>Court</Th>
+                    <Th>Status</Th>
                     <Th>User</Th>
                     <Th>Email</Th>
                     <Th>Created</Th>
@@ -346,6 +397,7 @@ export default function ReservationsTab() {
                 <tbody>
                   {pageRows.map((r, i) => {
                     const endMs = Number(r.reservedAt || 0) + Number(r.hours || 0) * 60 * 60 * 1000;
+                    const status = getReservationStatus(r.reservedAt, r.hours);
                     return (
                       <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
                         <Td>{(page - 1) * pageSize + i + 1}</Td>
@@ -354,6 +406,11 @@ export default function ReservationsTab() {
                         <Td>{fmtTime(endMs)}</Td>
                         <Td>{r.hours}</Td>
                         <Td>#{r.courtId ?? "—"}</Td>
+                        <Td>
+                          <span className={`${statusBadgeClass(status)} text-white px-3 py-1 rounded-full text-xs font-semibold`}>
+                            {statusLabel(status)}
+                          </span>
+                        </Td>
                         <Td>{[r.user?.firstName, r.user?.lastName].filter(Boolean).join(" ") || `User ${r.userId ?? "—"}`}</Td>
                         <Td className="text-gray-700">{r.user?.email || "—"}</Td>
                         <Td className="text-gray-700">{fmtDateTime(r.createdAt)}</Td>
