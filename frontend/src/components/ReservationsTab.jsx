@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { fmtDate, fmtDateTime, fmtTime, toNumber } from "../utils/dates";
+import ConfirmResponsePopup from "./ConfirmResponsePopup";
 
 export default function ReservationsTab() {
   const navigate = useNavigate();
@@ -20,6 +21,10 @@ export default function ReservationsTab() {
   const [sortDir, setSortDir] = useState("asc");
   const [page, setPage] = useState(1);
   const pageSize = 12;
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
+  const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
   // guards
   useEffect(() => {
@@ -160,6 +165,29 @@ export default function ReservationsTab() {
     setReservations((prev) => prev.filter((r) => r.id !== id));
   }
 
+  function askDelete(id) {
+    setPendingDeleteId(id);
+    setConfirmOpen(true);
+  }
+
+  async function handleConfirmDelete() {
+    const id = pendingDeleteId;
+    setConfirmOpen(false);
+    if (!id) return;
+
+    const res = await fetch(`http://localhost:5044/api/Reservations/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+    });
+    if (!res.ok) {
+        setTimeout(() => alert(`Törlés sikertelen (${res.status})`), 0);
+        return;
+    }
+    setReservations((prev) => prev.filter((r) => r.id !== id));
+    setPendingDeleteId(null);
+    setSuccessOpen(true);
+  }
+
   return (
     <div>
       {/* Filters */}
@@ -237,7 +265,7 @@ export default function ReservationsTab() {
                         <div className="flex items-center gap-2">
                           <button
                             className="cursor-pointer rounded-lg border border-red-200 px-3 py-1 text-xs font-medium text-red-700 transition-all hover:bg-red-600 hover:text-white"
-                            onClick={() => deleteReservation(r.id)}
+                            onClick={() => askDelete(r.id)}
                           >
                             Delete
                           </button>
@@ -266,6 +294,25 @@ export default function ReservationsTab() {
           </>
         )}
       </div>
+      {confirmOpen && (
+        <ConfirmResponsePopup
+            type="confirm"
+            title="Delete Reservation"
+            description="Are you sure you want to delete this reservation? This action cannot be undone."
+            confirmText="Delete"
+            cancelText="Cancel"
+            onConfirm={handleConfirmDelete}
+            onCancel={() => setConfirmOpen(false)}
+        />
+        )}
+
+        {successOpen && (
+        <ConfirmResponsePopup
+            title="Deleted"
+            description="The reservation has been successfully deleted."
+            onCancel={() => setSuccessOpen(false)}
+        />
+    )}
     </div>
   );
 }
