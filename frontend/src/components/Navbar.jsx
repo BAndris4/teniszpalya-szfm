@@ -11,7 +11,7 @@ function Navbar() {
     const [isLoaded, setIsLoaded] = useState(false);
 
     const {isReserveMenuVisible, setIsReserveMenuVisible} = useReserveMenu();
-    const { authenticated } = useCurrentUser();
+    const { user, authenticated } = useCurrentUser();
 
     const navigate = useNavigate();
     
@@ -51,7 +51,7 @@ function Navbar() {
                                 className={`h-12 cursor-pointer hover:scale-110 active:scale-95 transition-all duration-700 hover:drop-shadow-lg ease-in-out${isLoaded ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 rotate-360'}`}
                                 onClick={() => setAccountDropdown(!accountDropdown)}
                             />
-                            <AccountDropdown hidden={!accountDropdown}/>
+                            <AccountDropdown hidden={!accountDropdown} user={user}/>
                         </div>
                     ) : (
                         <a href="/login">
