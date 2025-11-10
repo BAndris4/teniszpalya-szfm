@@ -11,6 +11,7 @@ import ProfilePage from './views/ProfilePage.jsx';
 import ReserveByCourts from './views/ReserveByCourts.jsx';
 import ReserveByTime from './views/ReserveByTime.jsx';
 import CourtsPage from './views/CourtsPage.jsx';
+import Admin from './views/AdminPanel.jsx';
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
           <Route path="/courts" element={<CourtsPage/>} />
           <Route path="/reserveByCourt" element={<ReserveByCourts/>} />
           <Route path="/reserveByTime" element={<ReserveByTime/>} />
+          <Route path="/admin" element={<Admin />} />
         </Routes>
     </BrowserRouter>
   )
