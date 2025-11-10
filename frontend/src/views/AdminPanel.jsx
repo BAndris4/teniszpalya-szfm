@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ReserveMenuProvider } from "../contexts/ReserveMenuContext";
 import AdminTopbar from "../components/AdminTopbar";
 import ReservationsTab from "../components/ReservationsTab";
+import CourtsTab from "../components/CourtsTab";
 
 
 export default function AdminPanel() {
@@ -13,6 +14,7 @@ return (
 
         <div className="mx-auto max-w-[1200px] px-5 py-8">
         {activeTab === "reservations" && <ReservationsTab />}
+        {activeTab === "courts" && <CourtsTab />}
       </div>
     </div>
   </ReserveMenuProvider>

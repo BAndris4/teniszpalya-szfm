@@ -11,6 +11,7 @@ export default function AdminTopbar({ activeTab, onTabChange }) {
         </div>
         <div className="flex items-center gap-2">
           <TabButton active={activeTab === "reservations"} onClick={() => onTabChange("reservations")}>Reservations</TabButton>
+          <TabButton active={activeTab === "courts"} onClick={() => onTabChange("courts")}>Courts</TabButton>
           <button
             className="cursor-pointer rounded-xl border border-dark-green-octa px-3 py-1.5 text-sm font-medium text-dark-green transition-all hover:bg-dark-green hover:text-white"
             onClick={() => navigate("/")}
