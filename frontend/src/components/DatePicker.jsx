@@ -1,6 +1,8 @@
 function DatePicker({date, setDate}) {
     function prevDate() {
+        const currentDate = new Date();
         const newDate = new Date(date);
+        if (newDate < currentDate) return;
         newDate.setDate(newDate.getDate() - 1);
         setDate(newDate);
     }

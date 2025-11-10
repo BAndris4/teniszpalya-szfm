@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
-import { useAuth } from "../contexts/AuthContext.jsx";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 function Register() {
     const [isVisible, setIsVisible] = useState(false);
@@ -17,9 +17,15 @@ function Register() {
     const [emailError, setEmailError] = useState("");
     const [passwordError, setPasswordError] = useState("");
 
-    const { user, setUser } = useAuth();
-
     const navigate = useNavigate();
+
+    const { authenticated } = useCurrentUser();
+
+    useEffect(() => {
+        if (authenticated == true) {
+            navigate("/");
+        }
+    }, [authenticated]);
 
     const validateForm = async () => {
         let valid = true;
@@ -91,11 +97,6 @@ function Register() {
                 credentials: "include"
             });
             console.log("User logged in successfully");
-            const res = await fetch("http://localhost:5044/api/auth/me", {
-                credentials: "include"
-            })
-            const userData = await res.json();
-            setUser(userData);
             navigate("/");
         } catch (error) {
             console.error("Error:", error);

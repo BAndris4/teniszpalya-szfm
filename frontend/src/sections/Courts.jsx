@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import CourtCard from "../components/CourtCard"
+import { useNavigate } from "react-router-dom";
 
 function Courts() {
     const [courtInfo, setCourtInfo] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const maxVisible = 4;
 
+    const navigate = useNavigate();
+
     useEffect(() => {
         fetch("http://localhost:5044/api/Courts")
             .then((response) => response.json())
             .then((data) => {
-               setCourtInfo(data);
-                console.log(data); 
+                setCourtInfo(data);
+                console.log(data);
             })
-            .catch((error) => console.error("Error fetching data:", error));
+            .catch((error) => {
+                console.error("Error fetching data:", error);
+            });
     }, []);
 
     const handlePrevious = () => {
@@ -59,7 +64,7 @@ function Courts() {
                         }}
                     >
                         {courtInfo.map((court) => (
-                            <CourtCard key={court.id} court={court} />
+                            <CourtCard key={court.id} court={court} onClick={() => navigate(`/courts`)} />
                         ))}
                     </div>
                 </div>

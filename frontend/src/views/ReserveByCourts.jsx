@@ -4,6 +4,9 @@ import Navbar from "../components/Navbar";
 import DatePicker from "../components/DatePicker";
 import CourtCardSmall from "../components/CourtCardSmall";
 import TimeBlock from "../components/TimeBlock";
+import { useNavigate } from "react-router-dom";
+import ConfirmResponsePopup from "../components/ConfirmResponsePopup";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 function ReserveByCourts() {
     const [date, setDate] = useState(new Date());
@@ -14,6 +17,17 @@ function ReserveByCourts() {
     const [selectedTime, setSelectedTime] = useState(null);
     const [timeList, setTimeList] = useState(["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"]);
     const [freeTimes, setFreeTimes] = useState([]);
+    const [isReservationOk, setIsReservationOk] = useState(false);
+    
+    const navigate = useNavigate();
+
+    const {authenticated} = useCurrentUser();
+
+    useEffect(() => {
+        if (authenticated === false) {
+            navigate("/login");
+        } 
+    }, [authenticated]);
 
     useEffect(() => {
         const generatedFreeTimes = timeList.filter(() => Math.random() > 0.5);
@@ -26,17 +40,59 @@ function ReserveByCourts() {
         setSelectedCourt("Select a court!");
     }, [date]);
     
-    function lowerLength() {
+    const lowerLength = () => {
         if (length > 1) {
             setLength(length - 1);
         }
     }
 
-    function higherLength() {
+    const higherLength = () => {
         if (length < 12) {
             setLength(length + 1);
         }
     }
+
+    const handleReservation = () => {
+        
+        const reservedAt = new Date(date);
+        const [hours, minutes] = selectedTime.split(":").map(Number);
+        reservedAt.setHours(hours, minutes, 0, 0);
+
+        const courtID = Number(selectedCourt.split("#")[1]);
+
+        const data = {
+            createdAt: Date.now(),
+            reservedAt: reservedAt.getTime(),
+            hours: length,
+            courtID: courtID
+        }
+
+        console.log(data);
+
+        if (selectedTime === null || selectedCourt === "Select a court!") {
+            alert("Please select a time and a court!");
+            return;
+        }
+
+        fetch("http://localhost:5044/api/Reservations", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            credentials: "include",
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            setIsReservationOk(true);
+            setTimeout(() => {
+                navigate("/");
+            }, 2500);
+        })
+        .catch(error => console.error("Error:", error));
+    }
+
 
     useEffect(() => {
         fetch("http://localhost:5044/api/Courts")
@@ -61,8 +117,8 @@ function ReserveByCourts() {
                                 <div className="bg-white border border-dark-green px-4 py-2 rounded-2xl flex flex-row justify-between items-center transition-all duration-300 shadow-md">
                                     <div>{length} hour</div>
                                     <div className="flex flex-col gap-1">
-                                        <img src="./src/assets/full_chevron_up.svg" className="hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer" alt="" onClick={() => higherLength()}/>
-                                        <img src="./src/assets/full_chevron_down.svg" className="hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer" alt="" onClick={() => lowerLength()}/>
+                                        <img src="./src/assets/full_chevron_up.svg" className="hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer" alt="" onClick={higherLength}/>
+                                        <img src="./src/assets/full_chevron_down.svg" className="hover:scale-110 active:scale-90 transition-all duration-300 cursor-pointer" alt="" onClick={lowerLength}/>
                                     </div>
                                 </div>
                             </div>
@@ -91,13 +147,14 @@ function ReserveByCourts() {
                                     <TimeBlock key={time} time={time} disabled={!freeTimes.includes(time)} onClick={() => setSelectedTime(time)} active={selectedTime === time} />
                                 ))}
                             </div>
-                            <div className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center">
+                            <div className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center" onClick={handleReservation}>
                                 Accept reservation
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+            {isReservationOk && <ConfirmResponsePopup title={"Reservation Successful!"} description={"Your booking has been confirmed"}/>}
         </ReserveMenuProvider>
     );
 }

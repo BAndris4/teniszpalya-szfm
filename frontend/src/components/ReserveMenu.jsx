@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { useReserveMenu } from "../contexts/ReserveMenuContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 function ReserveMenu() {
 
     const { isReserveMenuVisible, setIsReserveMenuVisible } = useReserveMenu();
-    const { user } = useAuth();
+    const { authenticated } = useCurrentUser();
     const navigate = useNavigate();
 
     return (
@@ -19,7 +19,7 @@ function ReserveMenu() {
                         <div className="text-dark-green font-bold text-[32px] sm:text-[36px]">Reserve by Courts</div>
                         <div className="w-32 h-[60px] flex items-center justify-center rounded-[40px] text-[18px] font-bold text-white bg-dark-green cursor-pointer hover:scale-105 transition-all duration-300 active:scale-95" onClick={() => 
                             {
-                                if (user) {
+                                if (authenticated) {
                                     navigate("/reserveByCourt");
                                 } else {
                                     navigate("/login");
@@ -29,7 +29,7 @@ function ReserveMenu() {
                     <div className="min-h-[444px] flex-1 bg-dark-green rounded-[20px] flex flex-col items-start justify-end relative p-8 md:p-12 gap-4 overflow-hidden bg-[url('./src/assets/calendar.svg'),url('./src/assets/time.svg')] bg-no-repeat bg-[position:120px_-80px,40px_150px] bg-[length:400px_auto,100px_auto] sm:bg-[position:250px_-80px,70px_135px] sm:bg-[length:475px_auto,100px_auto] bg-fixed">
                         <div className="text-white font-bold  text-[32px] sm:text-[36px]">Reserve by Time</div>
                         <div className="w-32 h-[60px] flex items-center justify-center rounded-[40px] text-[18px] font-bold text-dark-green bg-white cursor-pointer hover:scale-105 transition-all duration-300 active:scale-95" onClick={() => {
-                            if (user) {
+                            if (authenticated) {
                                 navigate("/reserveByTime");
                             } else {
                                 navigate("/login");
