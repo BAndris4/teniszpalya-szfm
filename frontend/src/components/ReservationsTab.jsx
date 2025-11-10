@@ -13,14 +13,12 @@ export default function ReservationsTab() {
   const [users, setUsers] = useState([]);
   const [reservations, setReservations] = useState([]);
 
-  // search ONLY by name
   const [query, setQuery] = useState("");
 
   const [courtFilter, setCourtFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState(""); // "", "upcoming", "ongoing", "completed"
+  const [statusFilter, setStatusFilter] = useState("");
 
-  // --- NEW: mutually exclusive date filter mode
-  const [filterMode, setFilterMode] = useState("day"); // "day" | "range"
+  const [filterMode, setFilterMode] = useState("day");
   const [specificDay, setSpecificDay] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -34,7 +32,6 @@ export default function ReservationsTab() {
   const [successOpen, setSuccessOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
 
-  // guards
   useEffect(() => {
     if (authenticated === false) navigate("/login");
   }, [authenticated, navigate]);
@@ -43,7 +40,6 @@ export default function ReservationsTab() {
     if (me.firstName !== "admin") navigate("/");
   }, [me, navigate]);
 
-  // load data
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -71,15 +67,14 @@ export default function ReservationsTab() {
     return () => { cancelled = true; };
   }, []);
 
-  // join
   const rows = useMemo(() => {
     const userIndex = new Map(users.map((u) => [u.id, u]));
     const norm = (r) => {
-      const userId = r.userId ?? r.userID ?? r.user_id ?? r.user?.id ?? r.createdBy ?? r.created_by;
-      const courtId = r.courtID ?? r.courtId ?? r.court_id ?? r.court?.id;
-      const reservedAt = toNumber(r.reservedAt ?? r.reserved_at ?? r.startTime ?? r.start_time);
-      const createdAt = toNumber(r.createdAt ?? r.created_at);
-      const hours = Number(r.hours ?? r.length ?? r.durationHours ?? 1);
+      const userId = r.userID;
+      const courtId = r.courtID;
+      const reservedAt = toNumber(r.reservedAt);
+      const createdAt = toNumber(r.createdAt);
+      const hours = Number(r.hours);
       const user = userIndex.get(userId) || null;
       return {
         id: r.id ?? `${userId}-${reservedAt}`,
@@ -95,7 +90,6 @@ export default function ReservationsTab() {
     return reservations.map(norm);
   }, [reservations, users]);
 
-  // === STATUS helpers (same logic as History) ===
   function getReservationStatus(reservedAt, hours, now = Date.now()) {
     const start = Number(reservedAt || 0);
     const end = start + Number(hours || 0) * 60 * 60 * 1000;
@@ -128,7 +122,6 @@ export default function ReservationsTab() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
-    // bounds based on mode
     let fromTs = null, toTs = null;
     if (filterMode === "day" && specificDay) {
       fromTs = new Date(specificDay).setHours(0, 0, 0, 0);
@@ -147,13 +140,11 @@ export default function ReservationsTab() {
         if (fromTs && r.reservedAt < fromTs) return false;
         if (toTs && r.reservedAt > toTs) return false;
 
-        // NEW: status filter
         if (statusFilter) {
           const st = getReservationStatus(r.reservedAt, r.hours, now);
           if (st !== statusFilter) return false;
         }
 
-        // search only by name
         if (!q) return true;
         const name = [r.user?.firstName, r.user?.lastName].filter(Boolean).join(" ").toLowerCase();
         return name.includes(q);
@@ -195,21 +186,6 @@ export default function ReservationsTab() {
   function toggleSort(key) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
-  }
-
-  async function deleteReservation(id) {
-    if (!id) return;
-    const ok = window.confirm("Biztos törlöd ezt a foglalást?");
-    if (!ok) return;
-    const res = await fetch(`http://localhost:5044/api/Reservations/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (!res.ok) {
-      alert(`Törlés sikertelen (${res.status})`);
-      return;
-    }
-    setReservations((prev) => prev.filter((r) => r.id !== id));
   }
 
   function askDelete(id) {

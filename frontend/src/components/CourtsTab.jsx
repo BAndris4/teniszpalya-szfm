@@ -13,18 +13,15 @@ export default function CourtsTab() {
   const [error, setError] = useState(null);
   const [courts, setCourts] = useState([]);
 
-  // Create / Edit state
   const emptyForm = { id: null, outdoors: true, material: "Clay" };
   const [editing, setEditing] = useState(null); // court object being edited
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
-  // Delete confirm (meghagyva, de delete UI most disabled)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [successOpen, setSuccessOpen] = useState(false);
 
-  // Guards
   useEffect(() => {
     if (authenticated === false) navigate("/login");
   }, [authenticated, navigate]);
@@ -33,7 +30,6 @@ export default function CourtsTab() {
     if (me.firstName !== "admin") navigate("/");
   }, [me, navigate]);
 
-  // Load data
   useEffect(() => {
     let cancelled = false;
     async function load() {
@@ -60,7 +56,6 @@ export default function CourtsTab() {
     return [...courts].sort((a, b) => Number(a.id) - Number(b.id));
   }, [courts]);
 
-  // Scroll helper: AdminTopbar-ig
   function scrollToAdminTopbar() {
     const el = document.getElementById("AdminTopbar") || document.getElementById("admin-topbar");
     if (el?.scrollIntoView) {
@@ -89,13 +84,10 @@ export default function CourtsTab() {
     setForm(emptyForm);
   }
 
-  // (meghagyjuk, de a gombok disabled, így nem hívódnak)
   async function submitCreate() { /* intentionally disabled - no endpoint yet */ }
   async function submitUpdate() { /* intentionally disabled - no endpoint yet */ }
 
-  // Delete most teljesen disabled az UI-ban — ezek csak megmaradnak későbbre
   function askDelete(id) {
-    // disabled state-ben nem hívjuk
     setPendingDeleteId(id);
     setConfirmOpen(true);
   }
@@ -267,7 +259,6 @@ export default function CourtsTab() {
         )}
       </div>
 
-      {/* A delete popupok most nem érhetők el, de megtartjuk későbbre */}
       {confirmOpen && (
         <ConfirmResponsePopup
           type="confirm"

@@ -13,9 +13,9 @@ return (
         <AdminTopbar activeTab={activeTab} onTabChange={setActiveTab} />
 
         <div className="mx-auto max-w-[1400px] px-5 py-8">
-        {activeTab === "reservations" && <ReservationsTab />}
-        {activeTab === "courts" && <CourtsTab />}
-      </div>
+          {activeTab === "reservations" && <ReservationsTab />}
+          {activeTab === "courts" && <CourtsTab />}
+        </div>
     </div>
   </ReserveMenuProvider>
   );
