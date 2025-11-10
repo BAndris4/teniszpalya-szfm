@@ -1,44 +1,50 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import ConfirmResponsePopup from "./ConfirmResponsePopup";
 
 const MATERIALS = ["Clay", "Grass", "Hard"];
+const API_BASE = "http://localhost:5044/api/Courts";
 
 export default function CourtsTab() {
   const navigate = useNavigate();
   const { authenticated, user: me } = useCurrentUser();
 
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [courts, setCourts] = useState([]);
 
   const emptyForm = { id: null, outdoors: true, material: "Clay" };
-  const [editing, setEditing] = useState(null); // court object being edited
+  const [editing, setEditing] = useState(null);
   const [creating, setCreating] = useState(false);
   const [form, setForm] = useState(emptyForm);
 
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingDeleteId, setPendingDeleteId] = useState(null);
   const [successOpen, setSuccessOpen] = useState(false);
+  const [successTitle, setSuccessTitle] = useState("Success");
+  const [successDesc, setSuccessDesc] = useState("");
+  const [successAfter, setSuccessAfter] = useState("none"); // "none" | "reload"
 
+  // --- auth guard ---
   useEffect(() => {
     if (authenticated === false) navigate("/login");
   }, [authenticated, navigate]);
+
   useEffect(() => {
     if (!me) return;
     if (me.firstName !== "admin") navigate("/");
   }, [me, navigate]);
 
+  // --- load courts ---
   useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch("http://localhost:5044/api/Courts", {
-          credentials: "include",
-        });
+        const res = await fetch(API_BASE, { credentials: "include" });
         if (!res.ok) throw new Error(`Courts error ${res.status}`);
         const data = await res.json();
         if (!cancelled) setCourts(Array.isArray(data) ? data : []);
@@ -49,7 +55,9 @@ export default function CourtsTab() {
       }
     }
     load();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const sortedCourts = useMemo(() => {
@@ -58,14 +66,11 @@ export default function CourtsTab() {
 
   function scrollToAdminTopbar() {
     const el = document.getElementById("AdminTopbar") || document.getElementById("admin-topbar");
-    if (el?.scrollIntoView) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  // Helpers
+  // --- helpers ---
   function startCreate() {
     setCreating(true);
     setEditing(null);
@@ -82,11 +87,60 @@ export default function CourtsTab() {
     setEditing(null);
     setCreating(false);
     setForm(emptyForm);
+    setError(null);
   }
 
-  async function submitCreate() { /* intentionally disabled - no endpoint yet */ }
-  async function submitUpdate() { /* intentionally disabled - no endpoint yet */ }
+  // --- CREATE ---
+  async function submitCreate() {
+    try {
+      setSaving(true);
+      setError(null);
+      const res = await fetch(API_BASE, {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ material: form.material, outdoors: !!form.outdoors }),
+      });
+      if (!res.ok) throw new Error(`Create failed (${res.status})`);
 
+      setSuccessTitle("Created");
+      setSuccessDesc("The court has been successfully created.");
+      setSuccessAfter("reload"); // wait, then reload
+      setSuccessOpen(true);
+    } catch (e) {
+      setError(e?.message || "Create failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // --- UPDATE ---
+  async function submitUpdate() {
+    if (!editing?.id) return;
+    const id = editing.id;
+    try {
+      setSaving(true);
+      setError(null);
+      const res = await fetch(`${API_BASE}/${id}`, {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ material: form.material, outdoors: !!form.outdoors }),
+      });
+      if (!res.ok) throw new Error(`Update failed (${res.status})`);
+
+      setSuccessTitle("Updated");
+      setSuccessDesc("The court has been successfully updated.");
+      setSuccessAfter("reload");
+      setSuccessOpen(true);
+    } catch (e) {
+      setError(e?.message || "Update failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  // --- DELETE ---
   function askDelete(id) {
     setPendingDeleteId(id);
     setConfirmOpen(true);
@@ -95,17 +149,22 @@ export default function CourtsTab() {
     const id = pendingDeleteId;
     setConfirmOpen(false);
     if (!id) return;
-    const res = await fetch(`http://localhost:5044/api/Courts/${id}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-    if (!res.ok) {
-      setTimeout(() => alert(`Delete failed (${res.status})`), 0);
-      return;
+    try {
+      setSaving(true);
+      const res = await fetch(`${API_BASE}/${id}`, { method: "DELETE", credentials: "include" });
+      if (!res.ok) throw new Error(`Delete failed (${res.status})`);
+      setCourts((prev) => prev.filter((c) => c.id !== id));
+      setPendingDeleteId(null);
+
+      setSuccessTitle("Deleted");
+      setSuccessDesc("The court has been successfully deleted.");
+      setSuccessAfter("none");
+      setSuccessOpen(true);
+    } catch (e) {
+      setError(e?.message || "Delete failed");
+    } finally {
+      setSaving(false);
     }
-    setCourts((prev) => prev.filter((c) => c.id !== id));
-    setPendingDeleteId(null);
-    setSuccessOpen(true);
   }
 
   return (
@@ -167,21 +226,22 @@ export default function CourtsTab() {
               </div>
             </div>
 
-            {/* Actions (disabled) */}
+            {/* Actions */}
             <div className="flex items-end justify-end gap-2">
               {creating ? (
                 <>
                   <button
-                    className="cursor-not-allowed rounded-xl bg-dark-green px-4 py-2 font-semibold text-white opacity-50"
+                    className="rounded-xl bg-dark-green px-4 py-2 font-semibold text-white disabled:opacity-50 cursor-pointer"
                     onClick={submitCreate}
-                    disabled
-                    title="No endpoint yet"
+                    disabled={saving}
+                    title="Create court"
                   >
-                    Create
+                    {saving ? "Saving..." : "Create"}
                   </button>
                   <button
                     className="cursor-pointer rounded-xl border border-dark-green-octa px-4 py-2 font-semibold text-dark-green transition-all hover:bg-dark-green/10"
                     onClick={cancelEditOrCreate}
+                    disabled={saving}
                   >
                     Cancel
                   </button>
@@ -189,16 +249,17 @@ export default function CourtsTab() {
               ) : (
                 <>
                   <button
-                    className="cursor-not-allowed rounded-xl bg-dark-green px-4 py-2 font-semibold text-white opacity-50"
+                    className="rounded-xl bg-dark-green px-4 py-2 font-semibold text-white disabled:opacity-50"
                     onClick={submitUpdate}
-                    disabled
-                    title="No endpoint yet"
+                    disabled={saving}
+                    title="Save changes"
                   >
-                    Save
+                    {saving ? "Saving..." : "Save"}
                   </button>
                   <button
                     className="cursor-pointer rounded-xl border border-dark-green-octa px-4 py-2 font-semibold text-dark-green transition-all hover:bg-dark-green/10"
                     onClick={cancelEditOrCreate}
+                    disabled={saving}
                   >
                     Cancel
                   </button>
@@ -206,50 +267,55 @@ export default function CourtsTab() {
               )}
             </div>
           </div>
+
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+              {String(error)}
+            </div>
+          )}
         </div>
       )}
 
       {/* List */}
       <div className="rounded-2xl border border-dark-green-octa bg-white p-4 shadow-md">
         {loading && <div className="py-10 text-center text-dark-green">Loading courts…</div>}
-        {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{String(error)}</div>}
+        {error && !creating && !editing && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-700">{String(error)}</div>
+        )}
         {!loading && !error && (
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {sortedCourts.map((c) => {
-                return (
-                  <div key={c.id} className="overflow-hidden rounded-2xl border border-dark-green-octa shadow-sm bg-white">
-                    {/* Sima zöld background placeholder */}
-                    <div className="relative h-32 w-full bg-green" />
+              {sortedCourts.map((c) => (
+                <div key={c.id} className="overflow-hidden rounded-2xl border border-dark-green-octa shadow-sm bg-white">
+                  <div className="relative h-32 w-full bg-green" />
 
-                    <div className="p-4">
-                      <div className="mb-1 text-lg font-semibold text-dark-green">Court #{c.id}</div>
-                      <div className="text-sm text-gray-700">
-                        <span className="font-medium">Outdoors:</span> {c.outdoors ? "Yes" : "No"}
-                      </div>
-                      <div className="text-sm text-gray-700">
-                        <span className="font-medium">Material:</span> {c.material}
-                      </div>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button
-                          className="cursor-pointer rounded-lg border border-dark-green-octa px-3 py-1.5 text-xs font-medium text-dark-green transition-all hover:bg-dark-green hover:text-white"
-                          onClick={() => startEdit(c)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          className="cursor-not-allowed rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 opacity-50"
-                          disabled
-                          title="No endpoint yet"
-                          onClick={(e) => e.preventDefault()}
-                        >
-                          Delete
-                        </button>
-                      </div>
+                  <div className="p-4">
+                    <div className="mb-1 text-lg font-semibold text-dark-green">Court #{c.id}</div>
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Outdoors:</span> {c.outdoors ? "Yes" : "No"}
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      <span className="font-medium">Material:</span> {c.material}
+                    </div>
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        className="cursor-pointer rounded-lg border border-dark-green-octa px-3 py-1.5 text-xs font-medium text-dark-green transition-all hover:bg-dark-green hover:text-white"
+                        onClick={() => startEdit(c)}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        className="cursor-pointer rounded-lg border border-red-200 px-3 py-1.5 text-xs font-medium text-red-700 transition-all hover:bg-red-600 hover:text-white disabled:opacity-50"
+                        disabled={saving}
+                        onClick={() => askDelete(c.id)}
+                        title="Delete court"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
 
             {sortedCourts.length === 0 && (
@@ -273,9 +339,15 @@ export default function CourtsTab() {
 
       {successOpen && (
         <ConfirmResponsePopup
-          title="Deleted"
-          description="The court has been successfully deleted."
-          onCancel={() => setSuccessOpen(false)}
+          title={successTitle}
+          description={successDesc}
+          onCancel={() => {
+            setSuccessOpen(false);
+            if (successAfter === "reload") {
+              setSuccessAfter("none");
+              navigate(0); // reload after popup closes
+            }
+          }}
         />
       )}
     </div>
