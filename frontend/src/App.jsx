@@ -5,6 +5,7 @@ import "@fontsource/poppins/500.css";
 import "@fontsource/poppins/400.css";
 import Home from './views/Home';
 import Register from './views/Register.jsx'
+import Contact from './views/Contact.jsx';
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Signup from './views/Login.jsx';
 import ProfilePage from './views/ProfilePage.jsx';
@@ -25,6 +26,7 @@ function App() {
           <Route path="/reserveByCourt" element={<ReserveByCourts/>} />
           <Route path="/reserveByTime" element={<ReserveByTime/>} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
     </BrowserRouter>
   )
