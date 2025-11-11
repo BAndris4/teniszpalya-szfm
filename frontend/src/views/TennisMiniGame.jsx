@@ -3,65 +3,72 @@ import { motion } from "framer-motion";
 
 /**
  * TennisMiniGame.jsx
- *
- * Pong-like tennis mini-game (2D canvas).
- *
- * This rev:
- * - Hide last-stroke label (no "last hit" text). Also ensure it's cleared on point.
- * - Nicer, more alive court surround (gradient, vignette, subtle crowd, light sweep).
- * - Bot can make stroke mistakes via BOT_WRONG_STROKE_PROB.
- * - Pre-serve countdown + hit animations remain.
+ * - Klasszikus tenisz pontozás (0,15,30,40; deuce/előny)
+ * - Bot stroke-hiba
+ * - Start overlay a játéktérben; countdown csak Start után
+ * - Külön Game Over overlay (győztes/vesztes üzenet + kupon)
  */
 export default function TennisMiniGame({ onWin }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
-  const [running, setRunning] = useState(false);
-  const [paused, setPaused] = useState(false);
-  const [score, setScore] = useState({ player: 0, bot: 0 });
+
+  // 'menu' = kezdőképernyő, 'playing' = meccs fut
+  const [screen, setScreen] = useState("menu");
   const [coupon, setCoupon] = useState(null);
 
-  // Internal game state stored in a ref to avoid re-renders during animation
+  // Tenisz pontozás állapota
+  const [score, setScore] = useState({
+    p: 0,
+    b: 0,
+    adv: null, // "player" | "bot" | null
+    over: false,
+    winner: null,
+  });
+
+  // Internal game state stored in a ref
   const gameRef = useRef(null);
 
-  // --- Layout & gameplay constants (portrait court) ---
+  // --- Layout & gameplay constants ---
   const WIDTH = 520;
   const HEIGHT = 720;
   const COURT_MARGIN = 50;
   const NET_HEIGHT = 6;
 
-  const PADDLE_W = 80; // racket width
-  const PADDLE_H = 12; // racket height
-  const PADDLE_SPEED = 7.5; // px per frame
+  const PADDLE_W = 80;
+  const PADDLE_H = 12;
+  const PADDLE_SPEED = 7.5;
 
   const BALL_R = 7;
   const BALL_SPEED_INIT = 3;
   const BALL_SPEED_MAX = 3;
 
-  const BOT_SKILL = 1; // movement sharpness
-  const BOT_WRONG_STROKE_PROB = 0.5; // chance to choose the wrong stroke (higher = easier)
+  const BOT_SKILL = 1;
+  const BOT_WRONG_STROKE_PROB = 0.5;
 
-  const COUNTDOWN_MS = 2500; // 3..2..1..Go
+  const COUNTDOWN_MS = 3000; // 3..2..1..Go
 
   // Helpers
   const resetRally = (serveTo = "player") => {
-    const dirY = serveTo === "player" ? 1 : -1; // ball moving towards receiver after countdown
+    const dirY = serveTo === "player" ? 1 : -1;
     const now = performance.now();
     gameRef.current.ball = {
       x: WIDTH / 2,
       y: HEIGHT / 2,
       vx: 0,
-      vy: 0, // frozen during countdown
+      vy: 0, // freeze during countdown
       speed: BALL_SPEED_INIT,
     };
     gameRef.current.serveDir = dirY;
     gameRef.current.countdownEnd = now + COUNTDOWN_MS;
-    gameRef.current.rallyActive = false; // will flip true when serve starts
-    gameRef.current.lastHitType = null; // clear any last-hit marker
+    gameRef.current.rallyActive = false;
+    gameRef.current.lastHitType = null;
   };
 
+  const resetScore = () =>
+    setScore({ p: 0, b: 0, adv: null, over: false, winner: null });
+
   const resetGame = () => {
-    setScore({ player: 0, bot: 0 });
-    setCoupon(null);
+    resetScore();
     const now = performance.now();
     gameRef.current = {
       keys: { left: false, right: false },
@@ -83,12 +90,11 @@ export default function TennisMiniGame({ onWin }) {
     resetGame();
   }, []);
 
-  // Controls: keyboard + pointer + mouse buttons
+  // Controls: bal/jobb nyíl vagy A/D (nincs controls-szöveg a UI-ban)
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "ArrowLeft" || e.key === "a") gameRef.current.keys.left = e.type === "keydown";
       if (e.key === "ArrowRight" || e.key === "d") gameRef.current.keys.right = e.type === "keydown";
-      if (e.key === " ") setPaused((p) => !p);
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKey);
@@ -102,10 +108,8 @@ export default function TennisMiniGame({ onWin }) {
     const cvs = canvasRef.current;
     if (!cvs) return;
 
-    // Prevent context menu so right-click works as a control
     const preventMenu = (e) => e.preventDefault();
 
-    // Pointer move for mouse/touch
     const onPointerMove = (e) => {
       const rect = cvs.getBoundingClientRect();
       const pointerX = (e.clientX - rect.left) * (cvs.width / rect.width);
@@ -114,7 +118,6 @@ export default function TennisMiniGame({ onWin }) {
     const onPointerLeave = () => (gameRef.current.pointerX = null);
 
     const onPointerDown = (e) => {
-      // 0: left, 2: right
       if (e.button === 0) gameRef.current.mouse.left = true;
       if (e.button === 2) gameRef.current.mouse.right = true;
     };
@@ -138,30 +141,23 @@ export default function TennisMiniGame({ onWin }) {
     };
   }, []);
 
-  // Fancy court drawing
+  // Pálya rajzolás
   const drawCourt = (ctx) => {
-    // Background gradient (matches app vibe)
     const grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
     grad.addColorStop(0, "#f6f9f7");
     grad.addColorStop(1, "#e9f3ef");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // Vignette
     const vign = ctx.createRadialGradient(
-      WIDTH / 2,
-      HEIGHT / 2,
-      Math.min(WIDTH, HEIGHT) * 0.2,
-      WIDTH / 2,
-      HEIGHT / 2,
-      Math.max(WIDTH, HEIGHT) * 0.7
+      WIDTH / 2, HEIGHT / 2, Math.min(WIDTH, HEIGHT) * 0.2,
+      WIDTH / 2, HEIGHT / 2, Math.max(WIDTH, HEIGHT) * 0.7
     );
     vign.addColorStop(0, "rgba(0,0,0,0)");
     vign.addColorStop(1, "rgba(0,0,0,0.08)");
     ctx.fillStyle = vign;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // Subtle "crowd" dots above top court
     ctx.save();
     ctx.globalAlpha = 0.25;
     for (let i = 0; i < 80; i++) {
@@ -174,20 +170,16 @@ export default function TennisMiniGame({ onWin }) {
     }
     ctx.restore();
 
-    // Court body with shadow
     ctx.save();
-    ctx.shadowColor = "rgba(13, 94, 74, 0.25)"; // dark-green shadow
+    ctx.shadowColor = "rgba(13, 94, 74, 0.25)";
     ctx.shadowBlur = 18;
     ctx.shadowOffsetY = 6;
-    ctx.fillStyle = "#91c9a0"; // green court
+    ctx.fillStyle = "#91c9a0";
     ctx.fillRect(COURT_MARGIN, COURT_MARGIN, WIDTH - COURT_MARGIN * 2, HEIGHT - COURT_MARGIN * 2);
     ctx.restore();
 
-    // Lines
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
-
-    // Outer line
     ctx.strokeRect(
       COURT_MARGIN + 6,
       COURT_MARGIN + 6,
@@ -195,17 +187,14 @@ export default function TennisMiniGame({ onWin }) {
       HEIGHT - (COURT_MARGIN + 6) * 2
     );
 
-    // Net
     ctx.fillStyle = "#fff";
     ctx.fillRect(COURT_MARGIN + 6, HEIGHT / 2 - NET_HEIGHT / 2, WIDTH - (COURT_MARGIN + 6) * 2, NET_HEIGHT);
 
-    // Net posts
     ctx.fillStyle = "#dfe8e4";
     ctx.fillRect(COURT_MARGIN + 5, HEIGHT / 2 - NET_HEIGHT - 10, 4, NET_HEIGHT + 20);
     ctx.fillRect(WIDTH - COURT_MARGIN - 9, HEIGHT / 2 - NET_HEIGHT - 10, 4, NET_HEIGHT + 20);
 
-    // Moving light sweep across court (alive feel)
-    const t = (performance.now() / 2000) % 1; // 0..1
+    const t = (performance.now() / 2000) % 1;
     const sweepX = COURT_MARGIN + 20 + (WIDTH - (COURT_MARGIN + 20) * 2) * t;
     const lg = ctx.createLinearGradient(sweepX - 80, 0, sweepX + 80, 0);
     lg.addColorStop(0, "rgba(255,255,255,0)");
@@ -217,8 +206,8 @@ export default function TennisMiniGame({ onWin }) {
 
   const hitAnimScale = (hitAt) => {
     if (!hitAt) return 1;
-    const t = Math.max(0, 1 - (performance.now() - hitAt) / 180); // 0..1 over ~180ms
-    return 1 + t * 0.25; // squash/stretch factor
+    const t = Math.max(0, 1 - (performance.now() - hitAt) / 180);
+    return 1 + t * 0.25;
   };
 
   const drawPaddle = (ctx, x, y, isPlayer) => {
@@ -227,22 +216,18 @@ export default function TennisMiniGame({ onWin }) {
     const scale = hitAnimScale(hitAt);
 
     ctx.save();
-    // Anchor at paddle center for scale
     const cx = x + PADDLE_W / 2;
     const cy = y + PADDLE_H / 2;
     ctx.translate(cx, cy);
     ctx.scale(scale, 1 / scale);
     ctx.translate(-cx, -cy);
 
-    // Body
-    ctx.fillStyle = isPlayer ? "#0ea5e9" : "#ef4444"; // blue player, red bot
+    ctx.fillStyle = isPlayer ? "#0ea5e9" : "#ef4444";
     ctx.fillRect(x, y, PADDLE_W, PADDLE_H);
 
-    // center mark (visual only)
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.fillRect(cx - 1, y, 2, PADDLE_H);
 
-    // swing flash
     if (hitAt && performance.now() - hitAt < 120) {
       ctx.fillStyle = "rgba(255,255,255,0.4)";
       ctx.fillRect(x - 6, y, 6, PADDLE_H);
@@ -256,7 +241,7 @@ export default function TennisMiniGame({ onWin }) {
     ctx.beginPath();
     ctx.arc(x, y, BALL_R, 0, Math.PI * 2);
     ctx.closePath();
-    ctx.fillStyle = "#facc15"; // tennis ball yellow
+    ctx.fillStyle = "#facc15";
     ctx.fill();
   };
 
@@ -264,7 +249,6 @@ export default function TennisMiniGame({ onWin }) {
     const g = gameRef.current;
     const p = g.player;
 
-    // Pointer has priority for intuitive control
     if (g.pointerX != null) {
       const target = g.pointerX - PADDLE_W / 2;
       const dx = target - p.x;
@@ -274,7 +258,6 @@ export default function TennisMiniGame({ onWin }) {
       if (g.keys.right) p.x += PADDLE_SPEED;
     }
 
-    // Clamp within court
     const minX = COURT_MARGIN + 8;
     const maxX = WIDTH - COURT_MARGIN - 8 - PADDLE_W;
     p.x = Math.max(minX, Math.min(maxX, p.x));
@@ -285,8 +268,8 @@ export default function TennisMiniGame({ onWin }) {
     const b = g.ball;
     const bot = g.bot;
 
-    // If countdown active, gently center and return
-    if (isCountdownActive()) {
+    // Countdown közben centerezzen
+    if (isCountdownActive() && screen === "playing") {
       const centerTarget = WIDTH / 2 - PADDLE_W / 2;
       const dx = centerTarget - bot.x;
       const move = PADDLE_SPEED * 0.3;
@@ -294,27 +277,21 @@ export default function TennisMiniGame({ onWin }) {
       return;
     }
 
-    // If ball is moving AWAY from bot, gently drift toward center and chill
     if (b.vy > 0) {
       const centerTarget = WIDTH / 2 - PADDLE_W / 2;
       const dx = centerTarget - bot.x;
-      const move = PADDLE_SPEED * 0.35; // relaxed return-to-center
+      const move = PADDLE_SPEED * 0.35;
       if (Math.abs(dx) > 1) bot.x += Math.max(-move, Math.min(move, dx));
     } else {
-      // Ball moving TOWARD bot: move toward an intercept with slight noise
       const noise = (Math.random() * 40 - 20) * (1 - BOT_SKILL);
       const targetX = b.x + noise;
-
-      // If ball already horizontally above racket area, reduce following
       const alreadyCovered = targetX >= bot.x - 6 && targetX <= bot.x + PADDLE_W + 6;
-
       const dx = targetX - (bot.x + PADDLE_W / 2);
       const base = PADDLE_SPEED * (0.65 + 0.5 * BOT_SKILL);
-      const move = alreadyCovered ? base * 0.25 : base; // relax when covered
+      const move = alreadyCovered ? base * 0.25 : base;
       if (Math.abs(dx) > 2) bot.x += Math.max(-move, Math.min(move, dx));
     }
 
-    // Clamp
     const minX = COURT_MARGIN + 8;
     const maxX = WIDTH - COURT_MARGIN - 8 - PADDLE_W;
     bot.x = Math.max(minX, Math.min(maxX, bot.x));
@@ -324,41 +301,28 @@ export default function TennisMiniGame({ onWin }) {
     const g = gameRef.current;
     const b = g.ball;
 
-    // Check collision: y overlap
     const withinY = isPlayer
       ? b.y + BALL_R >= paddleY && b.y + BALL_R <= paddleY + PADDLE_H
       : b.y - BALL_R <= paddleY + PADDLE_H && b.y - BALL_R >= paddleY;
 
     if (!withinY) return false;
-
-    // Check x overlap
     if (b.x + BALL_R < paddleX || b.x - BALL_R > paddleX + PADDLE_W) return false;
 
-    // Determine side via horizontal offset to paddle center
     const center = paddleX + PADDLE_W / 2;
-    const offset = b.x - center; // negative -> left (BH), positive -> right (FH)
+    const offset = b.x - center;
 
-    // --- Player-specific input gating (mouse buttons) ---
     if (isPlayer) {
-      const needFH = offset > 0; // ball on right side => forehand
+      const needFH = offset > 0; // jobb oldal = forehand
       const ok = needFH ? g.mouse.right : g.mouse.left;
-      if (!ok) {
-        // no reflection if wrong input, hide any labels
-        return false;
-      }
+      if (!ok) return false;
     } else {
-      // --- Bot stroke mistake mechanic ---
       const needFH = offset > 0;
       const botChoosesFH = Math.random() > BOT_WRONG_STROKE_PROB ? needFH : !needFH;
-      if (botChoosesFH !== needFH) {
-        // bot used wrong stroke -> whiff (no visible label)
-        return false;
-      }
+      if (botChoosesFH !== needFH) return false;
     }
 
-    // Reflect with slight angle based on offset magnitude
     const norm = Math.max(-1, Math.min(1, offset / (PADDLE_W / 2)));
-    const angle = norm * 0.6; // -0.6..0.6 radians horizontal tilt
+    const angle = norm * 0.6;
 
     const speed = Math.min(BALL_SPEED_MAX, b.speed * 1.05 + 0.2);
     b.speed = speed;
@@ -369,14 +333,11 @@ export default function TennisMiniGame({ onWin }) {
     b.vx = newVx;
     b.vy = newVy;
 
-    // Nudge ball outside paddle to avoid sticking
     b.y = isPlayer ? paddleY - BALL_R - 1 : paddleY + PADDLE_H + BALL_R + 1;
 
-    // Hit animation stamp
     const now = performance.now();
     if (isPlayer) gameRef.current.anim.playerHitAt = now; else gameRef.current.anim.botHitAt = now;
 
-    // We no longer show last hit label, but keep touch for game logic if needed
     g.lastTouch = isPlayer ? "player" : "bot";
     return true;
   };
@@ -391,27 +352,10 @@ export default function TennisMiniGame({ onWin }) {
     if (!g || !g.countdownEnd) return;
     const now = performance.now();
     if (now >= g.countdownEnd && g.ball.vy === 0 && g.ball.vx === 0) {
-      // Kick off serve
       g.ball.vx = (Math.random() * 2 - 1) * 2.2;
       g.ball.vy = g.serveDir * BALL_SPEED_INIT;
       g.rallyActive = true;
     }
-  };
-
-  const drawCountdown = (ctx) => {
-    const g = gameRef.current;
-    if (!isCountdownActive()) return;
-    const remaining = Math.max(0, g.countdownEnd - performance.now());
-    const step = Math.ceil(remaining / 1000); // 3..2..1..0
-    const label = step > 0 ? String(step) : "Go";
-
-    ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "bold 64px ui-sans-serif";
-    ctx.textAlign = "center";
-    ctx.fillText(label, WIDTH / 2, HEIGHT / 2 + 22);
-    ctx.textAlign = "start";
   };
 
   const step = () => {
@@ -419,14 +363,13 @@ export default function TennisMiniGame({ onWin }) {
     const cvs = canvasRef.current;
     const ctx = cvs.getContext("2d");
 
-    // Update serve countdown state
-    if (running && !paused) {
+    const playing = screen === "playing";
+
+    if (playing) {
       maybeStartServe();
     }
 
-    // Physics pause OR pre-serve freeze
-    if (!running || paused || isCountdownActive()) {
-      // Allow paddle control even during countdown to let players prepare
+    if (!playing || isCountdownActive()) {
       applyPlayerControl();
       botAI();
 
@@ -435,21 +378,19 @@ export default function TennisMiniGame({ onWin }) {
       drawPaddle(ctx, g.bot.x, g.bot.y, false);
       drawBall(ctx, g.ball.x, g.ball.y);
       drawHUD(ctx);
-      drawCountdown(ctx);
+      if (playing) drawCountdown(ctx);
       rafRef.current = requestAnimationFrame(step);
       return;
     }
 
-    // Update controls & AI
+    // Fizika
     applyPlayerControl();
     botAI();
 
-    // Move ball
     const b = g.ball;
     b.x += b.vx;
     b.y += b.vy;
 
-    // Wall bounces L/R
     if (b.x - BALL_R <= COURT_MARGIN + 6) {
       b.x = COURT_MARGIN + 6 + BALL_R;
       b.vx *= -1;
@@ -459,18 +400,15 @@ export default function TennisMiniGame({ onWin }) {
       b.vx *= -1;
     }
 
-    // Try returns
     tryRacketReturn(g.player.x, g.player.y, true);
     tryRacketReturn(g.bot.x, g.bot.y, false);
 
-    // Top/Bottom: point scored
     if (b.y - BALL_R <= COURT_MARGIN + 6) {
-      pointTo("player");
+      awardPoint("player");
     } else if (b.y + BALL_R >= HEIGHT - (COURT_MARGIN + 6)) {
-      pointTo("bot");
+      awardPoint("bot");
     }
 
-    // Render
     drawCourt(ctx);
     drawPaddle(ctx, g.player.x, g.player.y, true);
     drawPaddle(ctx, g.bot.x, g.bot.y, false);
@@ -480,48 +418,146 @@ export default function TennisMiniGame({ onWin }) {
     rafRef.current = requestAnimationFrame(step);
   };
 
-  const drawHUD = (ctx) => {
-    // Score only (hide last hit info as requested)
-    ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 18px ui-sans-serif, system-ui, -apple-system";
-    ctx.fillText(`You ${score.player} : ${score.bot} Bot`, WIDTH / 2 - 60, 26);
+  // --- Tennis scoring helpers ---
+  const PVAL = [0, 15, 30, 40];
+
+  const formatScore = (s) => {
+    if (s.p === 3 && s.b === 3) {
+      if (s.adv === "player") return "You Adv : 40";
+      if (s.adv === "bot") return "40 : Bot Adv";
+      return "40 : 40 (Deuce)";
+    }
+    return `${PVAL[s.p]} : ${PVAL[s.b]}`;
   };
 
-  const pointTo = (who) => {
-    // Hide last-stroke immediately on scoring
-    if (gameRef.current) gameRef.current.lastHitType = null;
-    if (gameRef.current) gameRef.current.rallyActive = false;
+  const drawHUD = (ctx) => {
+    ctx.fillStyle = "#0f172a";
+    ctx.font = "bold 18px Poppins, sans-serif";
+    const label = formatScore(score);
+    const text = `You ${label} Bot`;
+    const metrics = ctx.measureText(text);
+    ctx.fillText(text, (WIDTH - metrics.width) / 2, 26);
+  };
+
+  const onGameWon = (winner) => {
+    // Állapot jelzése + kupon
+    setScore((s) => ({ ...s, over: true, winner }));
+    if (winner === "player") {
+      const code = generateCoupon();
+      setCoupon(code);
+      onWin?.(code);
+    }
+    // Itt nem lépünk azonnal menüre — a Game Over overlay látszik.
+    // A "Back to Start" gomb visz vissza a kezdőképernyőre.
+  };
+
+  const awardPoint = (who) => {
+    if (gameRef.current) {
+      gameRef.current.lastHitType = null;
+      gameRef.current.rallyActive = false;
+    }
 
     setScore((s) => {
-      const next = { ...s, [who]: s[who] + 1 };
+      if (s.over) return s;
 
-      // Setup next rally serve + countdown (serve to side that lost point)
-      const serveTo = who === "player" ? "bot" : "player";
-      resetRally(serveTo);
-
-      // Win check
-      const WIN_SCORE = 5;
-      if (next.player >= WIN_SCORE || next.bot >= WIN_SCORE) {
-        setRunning(false);
-        setPaused(false);
-        if (next.player > next.bot) {
-          const code = generateCoupon();
-          setCoupon(code);
-          onWin?.(code);
+      if (s.p === 3 && s.b === 3) {
+        if (s.adv === null) {
+          const next = { ...s, adv: who };
+          const serveTo = who === "player" ? "bot" : "player";
+          resetRally(serveTo);
+          return next;
         }
+        if (s.adv === who) {
+          const serveTo = who === "player" ? "bot" : "player";
+          resetRally(serveTo);
+          onGameWon(who);
+          return { ...s, over: true, winner: who };
+        }
+        const serveTo = who === "player" ? "bot" : "player";
+        resetRally(serveTo);
+        return { ...s, adv: null };
       }
-      return next;
+
+      if (who === "player") {
+        if (s.p === 3) {
+          const serveTo = "bot";
+          resetRally(serveTo);
+          onGameWon("player");
+          return { ...s, over: true, winner: "player" };
+        }
+        const newP = s.p + 1;
+        const next = { ...s, p: newP };
+        if (newP === 3 && s.b === 3) next.adv = null;
+        const serveTo = "bot";
+        resetRally(serveTo);
+        return next;
+      } else {
+        if (s.b === 3) {
+          const serveTo = "player";
+          resetRally(serveTo);
+          onGameWon("bot");
+          return { ...s, over: true, winner: "bot" };
+        }
+        const newB = s.b + 1;
+        const next = { ...s, b: newB };
+        if (newB === 3 && s.p === 3) next.adv = null;
+        const serveTo = "player";
+        resetRally(serveTo);
+        return next;
+      }
     });
   };
 
   const generateCoupon = () => {
-    // 20% coupon, valid code format TENNIS-XXXX-20
     const rnd = Array.from({ length: 4 }, () =>
-      Math.floor(Math.random() * 36)
-        .toString(36)
-        .toUpperCase()
+      Math.floor(Math.random() * 36).toString(36).toUpperCase()
     ).join("");
     return `TENNIS-${rnd}-20`;
+  };
+
+  // --------- PRE-SERVE COUNTDOWN with scale + easing ----------
+  const easeInOutCubic = (t) =>
+    t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+  const drawCountdown = (ctx) => {
+    if (!isCountdownActive()) return;
+
+    const end = gameRef.current.countdownEnd;
+    const now = performance.now();
+    const remaining = Math.max(0, end - now);
+
+    const step = Math.ceil(remaining / 1000); // 3..2..1..0
+    const isGo = step <= 0;
+    const label = isGo ? "Go" : String(step);
+
+    const localMs = isGo ? (1000 - (remaining % 1000)) % 1000 : remaining % 1000;
+    const t = 1 - localMs / 1000;
+    const e = easeInOutCubic(Math.min(Math.max(t, 0), 1));
+
+    const scale = isGo ? 0.9 + e * 0.45 : 1.25 - e * 0.25;
+    const alpha = isGo ? Math.max(0, 1 - e * 1.2) : Math.max(0, 1 - e);
+    const bgAlpha = 0.25 + 0.1 * e;
+
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${bgAlpha})`;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+    ctx.translate(WIDTH / 2, HEIGHT / 2 + 12);
+    ctx.scale(scale, scale);
+    ctx.globalAlpha = alpha;
+
+    ctx.fillStyle = "#ffffff";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.font = isGo ? "800 72px Poppins, sans-serif" : "800 88px Poppins, sans-serif";
+    ctx.fillText(label, 0, 0);
+
+    ctx.globalAlpha = alpha * 0.4;
+    ctx.shadowColor = "#ffffff";
+    ctx.shadowBlur = 24;
+    ctx.fillText(label, 0, 0);
+
+    ctx.restore();
   };
 
   // Game loop
@@ -530,9 +566,9 @@ export default function TennisMiniGame({ onWin }) {
     rafRef.current = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(rafRef.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [running, paused, score.player, score.bot]);
+  }, [screen, score.p, score.b, score.adv, score.over]);
 
-  // Resize canvas for crisp rendering on DPR screens
+  // DPR
   const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
   const cssW = WIDTH;
   const cssH = HEIGHT;
@@ -540,46 +576,6 @@ export default function TennisMiniGame({ onWin }) {
   return (
     <div className="w-full flex flex-col items-center gap-4 select-none">
       <div className="w-full max-w-[760px]">
-        <div className="flex items-center justify-between mb-2">
-          <div className="text-sm text-dark-green">
-            First to <span className="font-semibold">5</span>. Hold <span className="font-semibold">Right Click</span> for Forehand, <span className="font-semibold">Left Click</span> for Backhand.
-          </div>
-          <div className="flex items-center gap-2">
-            {!running ? (
-              <motion.button
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  resetGame();
-                  setRunning(true);
-                }}
-                className="px-3 py-1.5 rounded-[20px] bg-green text-white shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
-              >
-                Start
-              </motion.button>
-            ) : (
-              <>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setPaused((p) => !p)}
-                  className="px-3 py-1.5 rounded-[20px] bg-dark-green text-white shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
-                >
-                  {paused ? "Resume" : "Pause"} (Space)
-                </motion.button>
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => {
-                    resetGame();
-                    setRunning(true);
-                  }}
-                  className="px-3 py-1.5 rounded-[20px] bg-slate-200 text-slate-800 shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
-                >
-                  Restart
-                </motion.button>
-              </>
-            )}
-          </div>
-        </div>
-
         <div className="relative flex items-center justify-center">
           <canvas
             ref={canvasRef}
@@ -589,65 +585,93 @@ export default function TennisMiniGame({ onWin }) {
             className="rounded-[20px] shadow-md bg-[#e7f3eb] border border-dark-green-octa"
           />
 
-          {/* Scale drawing for DPR */}
-          <Scaler
-            canvasRef={canvasRef}
-            dpr={dpr}
-            draw={(ctx) => {
-              // ctx scaled via setTransform; main loop handles drawing.
-            }}
-          />
+          {/* DPR scale priming; main draw is in the loop */}
+          <Scaler canvasRef={canvasRef} dpr={dpr} draw={() => {}} />
 
-          {/* End / Coupon overlay */}
-          {(score.player >= 5 || score.bot >= 5) && (
+          {/* START OVERLAY (motivational) */}
+          {screen === "menu" && (
+            <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-black/30">
+              <div className="bg-white/95 backdrop-blur-sm border border-dark-green-octa rounded-[20px] px-7 py-7 w-[88%] max-w-md text-center shadow-lg">
+                <h3 className="text-2xl font-semibold mb-2 text-dark-green">
+                  Swing, win — get 20% in!
+                </h3>
+                <p className="text-sm text-slate-600 mb-5 leading-relaxed">
+                  Smash that serve, beat the bot, and grab a discount while you’re hot.
+                </p>
+
+                {coupon && (
+                  <div className="mb-4">
+                    <div className="text-xs text-emerald-700 mb-1">Your last reward coupon:</div>
+                    <div className="font-mono text-base px-3 py-2 bg-emerald-50 text-emerald-800 rounded-lg inline-block select-all">
+                      {coupon}
+                    </div>
+                  </div>
+                )}
+
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    resetGame();        // beállítja a countdown-ot is
+                    setScreen("playing");
+                  }}
+                  className="px-4 py-2 rounded-[20px] bg-green text-white shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
+                >
+                  Start
+                </motion.button>
+              </div>
+            </div>
+          )}
+
+          {/* GAME OVER OVERLAY */}
+          {screen === "playing" && score.over && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-[20px]"
             >
               <div className="bg-white rounded-[20px] p-6 w-[88%] max-w-md text-center shadow-lg border border-dark-green-octa">
-                {score.player > score.bot ? (
+                {score.winner === "player" ? (
                   <>
-                    <h3 className="text-xl font-semibold mb-1 text-dark-green">You win! 🎉</h3>
+                    <h3 className="text-xl font-semibold mb-2 text-dark-green">You won! 🎉</h3>
                     <p className="text-slate-600 mb-4">Here is your 20% discount coupon:</p>
                     <div className="font-mono text-lg px-3 py-2 bg-slate-100 rounded-lg inline-block mb-4 select-all">
                       {coupon}
                     </div>
-                    <div className="text-xs text-slate-500 mb-4">Apply at checkout to get 20% off your next reservation.</div>
-                    <div className="flex items-center justify-center gap-2">
-                      <button
-                        className="px-3 py-1.5 rounded-[20px] bg-emerald-600 text-white"
-                        onClick={() => {
-                          resetGame();
-                          setRunning(true);
-                        }}
-                      >
-                        Play Again
-                      </button>
+                    <div className="text-xs text-slate-500 mb-5">
+                      Apply at checkout to get 20% off your next reservation.
                     </div>
                   </>
                 ) : (
                   <>
-                    <h3 className="text-xl font-semibold mb-2 text-dark-green">Bot wins 😅</h3>
-                    <p className="text-slate-600 mb-4">Try again to earn the 20% coupon.</p>
-                    <button
-                      className="px-3 py-1.5 rounded-[20px] bg-slate-800 text-white"
-                      onClick={() => {
-                        resetGame();
-                        setRunning(true);
-                      }}
-                    >
-                      Try Again
-                    </button>
+                    <h3 className="text-xl font-semibold mb-2 text-dark-green">Game Over</h3>
+                    <p className="text-slate-600 mb-5">The bot took this one. Ready for a rematch?</p>
                   </>
                 )}
+
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    className="px-3 py-1.5 rounded-[20px] bg-slate-800 text-white"
+                    onClick={() => {
+                      // vissza a kezdőképernyőre (kupon megmarad a menün)
+                      setScreen("menu");
+                    }}
+                  >
+                    Back to Start
+                  </button>
+                  <button
+                    className="px-3 py-1.5 rounded-[20px] bg-emerald-600 text-white"
+                    onClick={() => {
+                      resetGame();
+                      setScore({ p: 0, b: 0, adv: null, over: false, winner: null });
+                      setScreen("playing");
+                    }}
+                  >
+                    Play Again
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}
-        </div>
-
-        <div className="mt-2 text-xs text-dark-green">
-          Controls: Move with mouse (or touch) or ← / →. Hold Right Click for Forehand, Left Click for Backhand. Press Space to pause.
         </div>
       </div>
     </div>
