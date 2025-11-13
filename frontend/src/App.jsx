@@ -13,6 +13,8 @@ import ReserveByCourts from './views/ReserveByCourts.jsx';
 import ReserveByTime from './views/ReserveByTime.jsx';
 import CourtsPage from './views/CourtsPage.jsx';
 import Admin from './views/AdminPanel.jsx';
+import Tournaments from './views/Tournaments.jsx';
+import TournamentDetails from './views/TournamentDetails.jsx';
 
 function App() {
   return (
@@ -27,6 +29,8 @@ function App() {
           <Route path="/reserveByTime" element={<ReserveByTime/>} />
           <Route path="/admin" element={<Admin />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/tournaments" element={<Tournaments />} />
+          <Route path="/tournaments/:id" element={<TournamentDetails />} />
         </Routes>
     </BrowserRouter>
   )
