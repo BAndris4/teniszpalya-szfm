@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import racketSvg from "../assets/minigame/racket.svg";
 
 // SFX imports
@@ -12,11 +13,12 @@ import swing2 from "../assets/minigame/swing2.mp3";
 import swing3 from "../assets/minigame/swing3.mp3";
 import swing4 from "../assets/minigame/swing4.mp3";
 
-export default function TennisMiniGame({ onWin }) {
+export default function TennisMiniGame() {
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
+  const navigate = useNavigate();
 
-  // 'menu' = kezdőképernyő, 'playing' = meccs fut
+  // 'menu' = kezdőképernyő, 'playing' = meccs fut, 'paused' = szünet
   const [screen, setScreen] = useState("menu");
   const [coupon, setCoupon] = useState(null);
 
@@ -136,7 +138,7 @@ export default function TennisMiniGame({ onWin }) {
     resetScore();
     const now = performance.now();
     gameRef.current = {
-      keys: { left: false, right: false },
+      keys: { left: false, right: false }, // már nem használjuk, de maradhat
       mouse: {
         leftDown: false,
         rightDown: false,
@@ -187,21 +189,46 @@ export default function TennisMiniGame({ onWin }) {
 
   // ---------- INPUT HANDLERS ----------
 
+  // Csak ESC-re reagálunk; A/D, nyilak nincsenek
   useEffect(() => {
-    const onKey = (e) => {
-      if (!gameRef.current) return;
-      if (e.key === "ArrowLeft" || e.key === "a")
-        gameRef.current.keys.left = e.type === "keydown";
-      if (e.key === "ArrowRight" || e.key === "d")
-        gameRef.current.keys.right = e.type === "keydown";
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") {
+        setScreen((prev) => {
+          if (prev === "playing" && !score.over) {
+            return "paused";
+          }
+          if (prev === "paused") {
+            return "playing";
+          }
+          return prev;
+        });
+      }
     };
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("keyup", onKey);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [score.over]);
+
+  // Alt+Tab / fókuszvesztés → pause
+  useEffect(() => {
+    const handleBlur = () => {
+      setScreen((prev) =>
+        prev === "playing" && !score.over ? "paused" : prev
+      );
+    };
+    const handleVisibility = () => {
+      if (document.hidden) {
+        setScreen((prev) =>
+          prev === "playing" && !score.over ? "paused" : prev
+        );
+      }
+    };
+    window.addEventListener("blur", handleBlur);
+    document.addEventListener("visibilitychange", handleVisibility);
     return () => {
-      window.removeEventListener("keydown", onKey);
-      window.removeEventListener("keyup", onKey);
+      window.removeEventListener("blur", handleBlur);
+      document.removeEventListener("visibilitychange", handleVisibility);
     };
-  }, []);
+  }, [score.over]);
 
   useEffect(() => {
     const cvs = canvasRef.current;
@@ -736,9 +763,6 @@ export default function TennisMiniGame({ onWin }) {
       const target = g.pointerX - PADDLE_W / 2;
       const dx = target - p.x;
       p.x += Math.max(-PADDLE_SPEED, Math.min(PADDLE_SPEED, dx));
-    } else {
-      if (g.keys.left) p.x -= PADDLE_SPEED;
-      if (g.keys.right) p.x += PADDLE_SPEED;
     }
 
     const minX = COURT_LEFT + 8;
@@ -752,31 +776,30 @@ export default function TennisMiniGame({ onWin }) {
     const b = g.ball;
     const bot = g.bot;
 
-    // Countdown közben centerezzen
-    if (isCountdownActive() && screen === "playing") {
+    // Countdown vagy pause alatt is csak finoman mozoghat
+    if ((isCountdownActive() || screen !== "playing") && !score.over) {
       const centerTarget = WIDTH / 2 - PADDLE_W / 2;
       const dx = centerTarget - bot.x;
       const move = PADDLE_SPEED * 0.3;
       if (Math.abs(dx) > 1) bot.x += Math.max(-move, Math.min(move, dx));
-      return;
-    }
-
-    if (b.vy > 0) {
-      // ha a labda lefelé jön, kicsit középre helyezkedik
-      const centerTarget = WIDTH / 2 - PADDLE_W / 2;
-      const dx = centerTarget - bot.x;
-      const move = PADDLE_SPEED * 0.35;
-      if (Math.abs(dx) > 1) bot.x += Math.max(-move, Math.min(move, dx));
-    } else {
-      // ha felé tart, kövesse a labdát
-      const noise = (Math.random() * 40 - 20) * (1 - BOT_SKILL);
-      const targetX = b.x + noise;
-      const alreadyCovered =
-        targetX >= bot.x - 6 && targetX <= bot.x + PADDLE_W + 6;
-      const dx = targetX - (bot.x + PADDLE_W / 2);
-      const base = PADDLE_SPEED * (0.65 + 0.5 * BOT_SKILL);
-      const move = alreadyCovered ? base * 0.25 : base;
-      if (Math.abs(dx) > 2) bot.x += Math.max(-move, Math.min(move, dx));
+    } else if (screen === "playing") {
+      if (b.vy > 0) {
+        // ha a labda lefelé jön, kicsit középre helyezkedik
+        const centerTarget = WIDTH / 2 - PADDLE_W / 2;
+        const dx = centerTarget - bot.x;
+        const move = PADDLE_SPEED * 0.35;
+        if (Math.abs(dx) > 1) bot.x += Math.max(-move, Math.min(move, dx));
+      } else {
+        // ha felé tart, kövesse a labdát
+        const noise = (Math.random() * 40 - 20) * (1 - BOT_SKILL);
+        const targetX = b.x + noise;
+        const alreadyCovered =
+          targetX >= bot.x - 6 && targetX <= bot.x + PADDLE_W + 6;
+        const dx = targetX - (bot.x + PADDLE_W / 2);
+        const base = PADDLE_SPEED * (0.65 + 0.5 * BOT_SKILL);
+        const move = alreadyCovered ? base * 0.25 : base;
+        if (Math.abs(dx) > 2) bot.x += Math.max(-move, Math.min(move, dx));
+      }
     }
 
     const minX = COURT_LEFT + 8;
@@ -1068,16 +1091,60 @@ export default function TennisMiniGame({ onWin }) {
                     </div>
                   )}
 
-                  <motion.button
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      resetGame();
-                      setScreen("playing");
-                    }}
-                    className="px-4 py-2 rounded-[20px] bg-green text-white shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
-                  >
-                    Start
-                  </motion.button>
+                  <div className="flex flex-col gap-3 items-center">
+                    <motion.button
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => {
+                        resetGame();
+                        setScreen("playing");
+                      }}
+                      className="px-4 py-2 rounded-[20px] bg-green text-white shadow-md cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 w-full"
+                    >
+                      Start
+                    </motion.button>
+
+                    <button
+                      onClick={() => {
+                        navigate("/");
+                      }}
+                      className="px-4 py-2 rounded-[20px] border border-slate-300 text-slate-700 bg-white/80 hover:bg-white cursor-pointer transition-all duration-200 w-full"
+                    >
+                      Back to home
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* PAUSE OVERLAY */}
+            {screen === "paused" && !score.over && (
+              <div className="absolute inset-0 flex items-center justify-center rounded-[20px] bg-black/40">
+                <div className="bg-white rounded-[20px] p-6 w-[88%] max-w-md text-center shadow-lg border border-dark-green-octa">
+                  <h3 className="text-xl font-semibold mb-2 text-dark-green">
+                    Paused ⏸
+                  </h3>
+                  <p className="text-slate-600 mb-5 text-sm">
+                    Take a breather. The match will wait for you.
+                  </p>
+
+                  <div className="flex flex-col gap-3">
+                    <button
+                      className="px-3 py-2 rounded-[20px] bg-emerald-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 w-full"
+                      onClick={() => {
+                        setScreen("playing");
+                      }}
+                    >
+                      Resume match
+                    </button>
+                    <button
+                      className="px-3 py-2 rounded-[20px] border border-slate-300 bg-white text-slate-700 cursor-pointer hover:bg-slate-50 active:scale-95 transition-all duration-300 w-full"
+                      onClick={() => {
+                        navigate("/");
+                      }}
+                    >
+                      Back to home
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
@@ -1102,7 +1169,8 @@ export default function TennisMiniGame({ onWin }) {
                         {coupon}
                       </div>
                       <div className="text-xs text-slate-500 mb-5">
-                        Apply at checkout to get 20% off your next reservation.
+                        Apply at checkout to get 20% off your next
+                        reservation.
                       </div>
                     </>
                   ) : (
@@ -1116,9 +1184,9 @@ export default function TennisMiniGame({ onWin }) {
                     </>
                   )}
 
-                  <div className="flex items-center justify-center gap-2">
+                  <div className="flex flex-col gap-3">
                     <button
-                      className="px-3 py-1.5 rounded-[20px] bg-slate-800 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
+                      className="px-3 py-1.5 rounded-[20px] bg-slate-800 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 w-full"
                       onClick={() => {
                         setScreen("menu");
                       }}
@@ -1126,7 +1194,7 @@ export default function TennisMiniGame({ onWin }) {
                       Back to Start
                     </button>
                     <button
-                      className="px-3 py-1.5 rounded-[20px] bg-emerald-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300"
+                      className="px-3 py-1.5 rounded-[20px] bg-emerald-600 text-white cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 w-full"
                       onClick={() => {
                         resetGame();
                         setScore({
@@ -1140,6 +1208,14 @@ export default function TennisMiniGame({ onWin }) {
                       }}
                     >
                       Play Again
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded-[20px] border border-slate-300 bg-white text-slate-700 cursor-pointer hover:bg-slate-50 active:scale-95 transition-all duration-300 w-full"
+                      onClick={() => {
+                        navigate("/");
+                      }}
+                    >
+                      Back to home
                     </button>
                   </div>
                 </div>
