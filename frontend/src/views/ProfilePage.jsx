@@ -5,6 +5,7 @@ import { ReserveMenuProvider } from "../contexts/ReserveMenuContext";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import ProfileSettings from "../components/ProfileSettings";
 import History from "../components/History";
+import Coupons from "../components/Coupons";
 
 function ProfilePage() {
 
@@ -82,6 +83,9 @@ function ProfilePage() {
                         <div className="border border-dark-green-octa py-3 px-9 rounded-lg shadow-lg shadow-dark-green-octa cursor-pointer transition-all duration-300  hover:-translate-y-1 active:translate-y-0" onClick={() => changeTab("history")}>
                             History
                         </div>
+                        <div className="border border-dark-green-octa py-3 px-9 rounded-lg shadow-lg shadow-dark-green-octa cursor-pointer transition-all duration-300  hover:-translate-y-1 active:translate-y-0" onClick={() => changeTab("coupons")}>
+                            Coupons
+                        </div>
                     </div>
         
 
@@ -90,7 +94,7 @@ function ProfilePage() {
                     }`}>
                         {tab === "settings" && <ProfileSettings firstName={firstName} lastName={lastName} email={email} phoneNumber={phoneNumber} onUpdateSuccess={handleUpdateSuccess}/>}
                         {tab === "history" && <History />}
-                        
+                        {tab === "coupons" && <Coupons />}
                     </div>
                 </div>
                 

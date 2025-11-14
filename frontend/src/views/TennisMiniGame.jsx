@@ -1127,7 +1127,7 @@ export default function TennisMiniGame() {
 
                     <button
                       onClick={() => {
-                        navigate("/");
+                        navigate("/profile?tab=coupons");
                       }}
                       className="px-4 py-2 rounded-[20px] border border-slate-300 text-slate-700 bg-white/80 hover:bg-white cursor-pointer transition-all duration-200 w-full"
                     >
@@ -1161,7 +1161,7 @@ export default function TennisMiniGame() {
                     <button
                       className="px-3 py-2 rounded-[20px] border border-slate-300 bg-white text-slate-700 cursor-pointer hover:bg-slate-50 active:scale-95 transition-all duration-300 w-full"
                       onClick={() => {
-                        navigate("/");
+                        navigate("/profile?tab=coupons");
                       }}
                     >
                       Back to home
@@ -1234,7 +1234,7 @@ export default function TennisMiniGame() {
                     <button
                       className="px-3 py-1.5 rounded-[20px] border border-slate-300 bg-white text-slate-700 cursor-pointer hover:bg-slate-50 active:scale-95 transition-all duration-300 w-full"
                       onClick={() => {
-                        navigate("/");
+                        navigate("/profile?tab=coupons");
                       }}
                     >
                       Back to home
