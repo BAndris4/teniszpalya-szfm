@@ -79,6 +79,8 @@ namespace Teniszpalya.API.Controllers
 
             if(coupon != null)
             {
+                if (coupon.Used) return BadRequest(new { message = "Coupon code already used." });
+
                 coupon.Used = true;
             }
 
