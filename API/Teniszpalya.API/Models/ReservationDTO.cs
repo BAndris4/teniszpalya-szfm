@@ -6,5 +6,6 @@ namespace Teniszpalya.API.Models
         public required long ReservedAt { get; set; }
         public required float Hours { get; set; }
         public required int CourtID { get; set; }
+        public string CouponCode { get; set; } = string.Empty;
     }
 }
