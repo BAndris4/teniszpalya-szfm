@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import racketSvg from "../assets/minigame/racket.svg";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 // SFX imports
 import hit1 from "../assets/minigame/hit1.mp3";
@@ -17,6 +18,8 @@ export default function TennisMiniGame() {
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
   const navigate = useNavigate();
+
+  const { user, authenticated } = useCurrentUser();
 
   // 'menu' = kezdőképernyő, 'playing' = meccs fut, 'paused' = szünet
   const [screen, setScreen] = useState("menu");
@@ -70,8 +73,14 @@ export default function TennisMiniGame() {
   const BOT_WRONG_STROKE_PROB = 0.35;
 
   const COUNTDOWN_MS = 3000; // 3..2..1..Go
-
-  // ---------- INIT ASSETS ----------
+  
+  useEffect(() => {
+    if (authenticated === false) {
+      navigate("/login");
+    }
+  }, [authenticated, navigate]);
+  
+    // ---------- INIT ASSETS ----------
 
   useEffect(() => {
     const img = new Image();
@@ -663,12 +672,12 @@ export default function TennisMiniGame() {
 
   // ---------- GAME LOGIC ----------
 
-  const onGameWon = (winner) => {
+  const onGameWon = async (winner) => {
     setScore((s) => ({ ...s, over: true, winner }));
+
     if (winner === "player") {
-      const code = generateCoupon();
-      setCoupon(code);
-      onWin?.(code);
+      const code = await requestCouponFromAPI();
+      setCoupon(code || "ERROR");
     }
   };
 
@@ -731,12 +740,25 @@ export default function TennisMiniGame() {
     });
   };
 
-  const generateCoupon = () => {
-    const rnd = Array.from({ length: 4 }, () =>
-      Math.floor(Math.random() * 36).toString(36).toUpperCase()
-    ).join("");
-    return `TENNIS-${rnd}-20`;
+  const requestCouponFromAPI = async () => {
+    try {
+      const res = await fetch("http://localhost:5044/api/coupon/request", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!res.ok) throw new Error("Coupon request failed");
+
+      // backend textet küld, nem JSON-t
+      const code = await res.text();
+      return code.trim();
+    } catch (err) {
+      console.error("Coupon API error:", err);
+      return null;
+    }
   };
+
+
 
   const isCountdownActive = () => {
     const g = gameRef.current;
