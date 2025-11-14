@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Teniszpalya.API.Data;
+using Teniszpalya.API.Models;
 
 namespace Teniszpalya.API;
 
@@ -70,6 +71,13 @@ public class Program
 
         var app = builder.Build();
 
+        // Seed the database with initial data
+        using (var scope = app.Services.CreateScope())
+        {
+            var context = scope.ServiceProvider.GetRequiredService<AppDBContext>();
+            SeedDatabase(context);
+        }
+
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -85,5 +93,78 @@ public class Program
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
+    }
+
+    private static void SeedDatabase(AppDBContext context)
+    {
+        // Seed Users
+        if (!context.Users.Any())
+        {
+            var adminUser = new User
+            {
+                FirstName = "Admin",
+                LastName = "User",
+                Email = "admin@test.com",
+                PhoneNumber = "+36301234567",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                RoleID = 2 // Admin role
+            };
+
+            var regularUser = new User
+            {
+                FirstName = "Test",
+                LastName = "User",
+                Email = "test@test.com",
+                PhoneNumber = "+36307654321",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("test123"),
+                RoleID = 1 // Regular user role
+            };
+
+            context.Users.AddRange(adminUser, regularUser);
+            context.SaveChanges();
+        }
+
+        // Seed Courts
+        if (!context.Courts.Any())
+        {
+            var courts = new[]
+            {
+                new Court { Material = "Clay", Outdoors = true },
+                new Court { Material = "Hard", Outdoors = true },
+                new Court { Material = "Grass", Outdoors = true },
+                new Court { Material = "Hard", Outdoors = false }
+            };
+
+            context.Courts.AddRange(courts);
+            context.SaveChanges();
+        }
+
+        // Seed Court Prices
+        if (!context.CourtPrices.Any())
+        {
+            var prices = new[]
+            {
+                // Indoor prices (Summer 6-18)
+                new CourtPrice { Outdoor = false, Season = Season.SUMMER, Price = 3000, ValidFrom = 6, ValidTo = 18 },
+                // Indoor prices (Summer 18-22)
+                new CourtPrice { Outdoor = false, Season = Season.SUMMER, Price = 4000, ValidFrom = 18, ValidTo = 22 },
+                // Indoor prices (Winter 6-18)
+                new CourtPrice { Outdoor = false, Season = Season.WINTER, Price = 3500, ValidFrom = 6, ValidTo = 18 },
+                // Indoor prices (Winter 18-22)
+                new CourtPrice { Outdoor = false, Season = Season.WINTER, Price = 4500, ValidFrom = 18, ValidTo = 22 },
+                
+                // Outdoor prices (Summer 6-18)
+                new CourtPrice { Outdoor = true, Season = Season.SUMMER, Price = 2000, ValidFrom = 6, ValidTo = 18 },
+                // Outdoor prices (Summer 18-22)
+                new CourtPrice { Outdoor = true, Season = Season.SUMMER, Price = 2500, ValidFrom = 18, ValidTo = 22 },
+                // Outdoor prices (Winter 6-18)
+                new CourtPrice { Outdoor = true, Season = Season.WINTER, Price = 2500, ValidFrom = 6, ValidTo = 18 },
+                // Outdoor prices (Winter 18-22)
+                new CourtPrice { Outdoor = true, Season = Season.WINTER, Price = 3000, ValidFrom = 18, ValidTo = 22 }
+            };
+
+            context.CourtPrices.AddRange(prices);
+            context.SaveChanges();
+        }
     }
 }
