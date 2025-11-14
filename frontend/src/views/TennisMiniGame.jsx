@@ -57,7 +57,7 @@ export default function TennisMiniGame({ onWin }) {
   const BALL_SPEED_MAX = 3;
 
   const BOT_SKILL = 1;
-  const BOT_WRONG_STROKE_PROB = 0.45;
+  const BOT_WRONG_STROKE_PROB = 0.35;
 
   const COUNTDOWN_MS = 3000; // 3..2..1..Go
 
@@ -204,14 +204,33 @@ export default function TennisMiniGame({ onWin }) {
     };
   }, []);
 
-  // Pálya rajzolás
+  // ----------- DRAW HELPERS -----------
+
+  const drawRoundedRect = (ctx, x, y, w, h, r) => {
+    const radius = Math.min(r, w / 2, h / 2);
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + w - radius, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + radius);
+    ctx.lineTo(x + w, y + h - radius);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - radius, y + h);
+    ctx.lineTo(x + radius, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+  };
+
+  // Pálya rajzolás – színek/effektek maradnak, vonalak teniszpálya-szerűek
   const drawCourt = (ctx) => {
+    // háttér gradient
     const grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
     grad.addColorStop(0, "#f6f9f7");
     grad.addColorStop(1, "#e9f3ef");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+    // vignette
     const vign = ctx.createRadialGradient(
       WIDTH / 2,
       HEIGHT / 2,
@@ -225,6 +244,7 @@ export default function TennisMiniGame({ onWin }) {
     ctx.fillStyle = vign;
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+    // kis "por" / fény pöttyök
     ctx.save();
     ctx.globalAlpha = 0.25;
     for (let i = 0; i < 80; i++) {
@@ -237,6 +257,7 @@ export default function TennisMiniGame({ onWin }) {
     }
     ctx.restore();
 
+    // pálya – zöld téglalap árnyékkal
     ctx.save();
     ctx.shadowColor = "rgba(13, 94, 74, 0.25)";
     ctx.shadowBlur = 18;
@@ -245,47 +266,97 @@ export default function TennisMiniGame({ onWin }) {
     ctx.fillRect(COURT_LEFT, COURT_TOP, COURT_WIDTH, COURT_HEIGHT);
     ctx.restore();
 
+    // belső "játéktér" margó (fehér keret vastagság)
+    const L = COURT_LEFT + 6;
+    const R = COURT_RIGHT - 6;
+    const T = COURT_TOP + 6;
+    const B = COURT_BOTTOM - 6;
+    const cw = R - L;
+    const ch = B - T;
+    const centerX = L + cw / 2;
+
+    // külső fehér keret
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
-    ctx.strokeRect(
-      COURT_LEFT + 6,
-      COURT_TOP + 6,
-      COURT_WIDTH - 12,
-      COURT_HEIGHT - 12
-    );
+    ctx.strokeRect(L, T, cw, ch);
 
+    // teniszpálya vonalak
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+
+    // baseline-ok (felső / alsó)
+    ctx.beginPath();
+    ctx.moveTo(L, T);
+    ctx.lineTo(R, T);
+    ctx.moveTo(L, B);
+    ctx.lineTo(R, B);
+    ctx.stroke();
+
+    // oldalsó vonalak (doubles)
+    ctx.beginPath();
+    ctx.moveTo(L, T);
+    ctx.lineTo(L, B);
+    ctx.moveTo(R, T);
+    ctx.lineTo(R, B);
+    ctx.stroke();
+
+    // singles vonalak – kicsit beljebb
+    const singlesInset = cw * 0.14;
+    const sL = L + singlesInset;
+    const sR = R - singlesInset;
+
+    ctx.beginPath();
+    ctx.moveTo(sL, T);
+    ctx.lineTo(sL, B);
+    ctx.moveTo(sR, T);
+    ctx.lineTo(sR, B);
+    ctx.stroke();
+
+    // szervavonalak – baseline és háló között kb 1/4–1/3 arányban
+    const serviceTop = T + ch * 0.28;
+    const serviceBot = B - ch * 0.28;
+
+    ctx.beginPath();
+    ctx.moveTo(sL, serviceTop);
+    ctx.lineTo(sR, serviceTop);
+    ctx.moveTo(sL, serviceBot);
+    ctx.lineTo(sR, serviceBot);
+    ctx.stroke();
+
+    // közép szervavonal (center service line)
+    ctx.beginPath();
+    ctx.moveTo(centerX, serviceTop);
+    ctx.lineTo(centerX, serviceBot);
+    ctx.stroke();
+
+    // baseline közép jelölés (center mark)
+    const markLen = 10;
+    ctx.beginPath();
+    ctx.moveTo(centerX, T);
+    ctx.lineTo(centerX, T + markLen);
+    ctx.moveTo(centerX, B);
+    ctx.lineTo(centerX, B - markLen);
+    ctx.stroke();
+
+    // háló
     const netY = COURT_CENTER_Y - NET_HEIGHT / 2;
-
     ctx.fillStyle = "#fff";
-    ctx.fillRect(COURT_LEFT + 6, netY, COURT_WIDTH - 12, NET_HEIGHT);
+    ctx.fillRect(L, netY, cw, NET_HEIGHT);
 
+    // háló "oszlopok"
     ctx.fillStyle = "#dfe8e4";
-    ctx.fillRect(
-      COURT_LEFT + 5,
-      netY - NET_HEIGHT - 10,
-      4,
-      NET_HEIGHT + 20
-    );
-    ctx.fillRect(
-      COURT_RIGHT - 9,
-      netY - NET_HEIGHT - 10,
-      4,
-      NET_HEIGHT + 20
-    );
+    ctx.fillRect(L - 1, netY - NET_HEIGHT - 10, 4, NET_HEIGHT + 20);
+    ctx.fillRect(R - 3, netY - NET_HEIGHT - 10, 4, NET_HEIGHT + 20);
 
+    // fénysáv (sweep) a pályán
     const t = (performance.now() / 2000) % 1;
-    const sweepX = COURT_LEFT + 20 + (COURT_WIDTH - 40) * t;
+    const sweepX = L + 20 + (cw - 40) * t;
     const lg = ctx.createLinearGradient(sweepX - 80, 0, sweepX + 80, 0);
     lg.addColorStop(0, "rgba(255,255,255,0)");
     lg.addColorStop(0.5, "rgba(255,255,255,0.06)");
     lg.addColorStop(1, "rgba(255,255,255,0)");
     ctx.fillStyle = lg;
-    ctx.fillRect(
-      COURT_LEFT + 6,
-      COURT_TOP + 6,
-      COURT_WIDTH - 12,
-      COURT_HEIGHT - 12
-    );
+    ctx.fillRect(L, T, cw, ch);
   };
 
   const hitAnimScale = (hitAt) => {
@@ -299,20 +370,20 @@ export default function TennisMiniGame({ onWin }) {
     const elapsed = performance.now() - hitAt;
     const dur = 180;
     if (elapsed > dur) return 0;
-    const t = 1 - elapsed / dur; // 1 -> 0
+    const t = 1 - elapsed / 180;
     const dir = isPlayer ? 1 : -1;
     return dir * 0.45 * t;
   };
 
-  // ÚJ: ütő rajzolása a piros/kék bar helyett
+  // ütő rajzolása
   const drawRacket = (ctx, x, y, isPlayer) => {
     const g = gameRef.current;
     const img = racketImgRef.current;
+    if (!g) return;
 
     const hitAt = isPlayer ? g.anim.playerHitAt : g.anim.botHitAt;
     const scale = hitAnimScale(hitAt);
     const angle = hitAnimAngle(hitAt, isPlayer);
-
     const facing = isPlayer ? g.anim.playerFacing : g.anim.botFacing || 1;
 
     const cx = x + PADDLE_W / 2;
@@ -324,12 +395,12 @@ export default function TennisMiniGame({ onWin }) {
     ctx.scale(scale * facing, scale);
 
     if (img && img.complete) {
-      const baseSize = 90; // tetszőleges vizuális méret
+      const baseSize = 90;
       const w = baseSize;
       const h = baseSize;
       ctx.drawImage(img, -w / 2, -h / 2, w, h);
     } else {
-      // fallback: régi bar, ha még nem töltött be az SVG
+      // fallback
       ctx.fillStyle = isPlayer ? "#0ea5e9" : "#ef4444";
       ctx.fillRect(-PADDLE_W / 2, -PADDLE_H / 2, PADDLE_W, PADDLE_H);
     }
@@ -420,20 +491,19 @@ export default function TennisMiniGame({ onWin }) {
       // --- 2) Timing check: tap window (nem elég nyomva tartani) ---
       const needFH = offset > 0; // jobb oldal = forehand
       const tapWindowMs = 160;
-      const lastTap = needFH
-        ? g.mouse.lastRightTapAt
-        : g.mouse.lastLeftTapAt;
+      const lastTap =
+        needFH ? g.mouse.lastRightTapAt : g.mouse.lastLeftTapAt;
 
       if (!lastTap || now - lastTap > tapWindowMs) return false;
 
-      // --- 3) Innentől garantált, hogy suhintunk: anim + CD indul --- 
+      // --- 3) Garantált suhintás: anim + CD indul ---
       g.anim.playerFacing = needFH ? 1 : -1;
       g.anim.playerHitAt = now;
       hit.playerNextAllowedAt = now + hit.cooldownMs;
       g.lastTouch = "player";
-      // Ha nincs contact, itt egyszerűen "whiff", és visszatérünk false-szal később.
+      // ha nincs contact, egyszerű whiff → false-t adunk vissza lentebb
     } else {
-      // Bot: először azt döntjük el, hogy jó stroke-ot választ-e
+      // Bot stroke választás – lehet rossz oldal
       const needFH = offset > 0;
       const botChoosesFH =
         Math.random() > BOT_WRONG_STROKE_PROB ? needFH : !needFH;
@@ -441,8 +511,8 @@ export default function TennisMiniGame({ onWin }) {
       g.anim.botFacing = needFH ? 1 : -1;
     }
 
-    // --- 4) Geometria: tényleg eléri-e az ütő a labdát? ---
-    const extra = isPlayer ? 25 : 0; // ennyivel szélesebb és magasabb a találati zóna
+    // --- 4) Geometria: eléri-e az ütő a labdát? ---
+    const extra = isPlayer ? 25 : 0;
 
     const withinY = isPlayer
       ? b.y + BALL_R >= paddleY - extra &&
@@ -454,12 +524,12 @@ export default function TennisMiniGame({ onWin }) {
       b.x + BALL_R >= paddleX - extra &&
       b.x - BALL_R <= paddleX + PADDLE_W + extra;
 
-    // Ha nincs contact:
     if (!withinY || !withinX) {
-      return false; // playernél ez whiff (anim + CD már megtörtént)
+      // playernél ez whiff: anim + CD már megtörtént
+      return false;
     }
 
-    // --- 5) Valós ütközés: fizika + anim (botnál itt indítjuk a hit animot) ---
+    // --- 5) Valós ütközés: fizika + anim ---
     const norm = Math.max(-1, Math.min(1, offset / (PADDLE_W / 2)));
     const angle = norm * 0.6;
 
@@ -513,16 +583,55 @@ export default function TennisMiniGame({ onWin }) {
     return `${PVAL[s.p]} : ${PVAL[s.b]}`;
   };
 
+  // Szebb HUD – kis kártya a tetején
   const drawHUD = (ctx) => {
+    const boxW = 260;
+    const boxH = 52;
+    const x = WIDTH / 2 - boxW / 2;
+    const y = 18;
+
+    ctx.save();
+
+    // kártya háttér
+    ctx.globalAlpha = 0.95;
+    drawRoundedRect(ctx, x, y, boxW, boxH, 16);
+
+    const grd = ctx.createLinearGradient(x, y, x + boxW, y + boxH);
+    grd.addColorStop(0, "rgba(255,255,255,0.9)");
+    grd.addColorStop(1, "rgba(241,245,249,0.9)");
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // finom outline
+    ctx.strokeStyle = "rgba(148,163,184,0.6)";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // kis drop shadow
+    ctx.globalAlpha = 0.18;
+    ctx.shadowColor = "rgba(15,23,42,0.7)";
+    ctx.shadowBlur = 16;
+    ctx.shadowOffsetY = 6;
+    drawRoundedRect(ctx, x, y + 2, boxW, boxH, 16);
+    ctx.fillStyle = "rgba(15,23,42,0.15)";
+    ctx.fill();
+
+    ctx.restore();
+
+    // szöveg
+    ctx.save();
     ctx.fillStyle = "#0f172a";
-    ctx.font = "bold 18px Poppins, sans-serif";
-    const label = formatScore(score);
-    const text = `You ${label} Bot`;
-    const metrics = ctx.measureText(text);
-    ctx.fillText(text, (WIDTH - metrics.width) / 2, 24);
+    ctx.font = "700 18px Poppins, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    const label = `You ${formatScore(score)} Bot`;
+    ctx.fillText(label, WIDTH / 2, y + boxH / 2);
+
+    ctx.restore();
   };
 
-  // ÚJ: ütés cooldown indikátor jobb alsó sarokban
+  // ütés cooldown indikátor jobb alsó sarokban
   const drawHitCooldown = (ctx) => {
     const g = gameRef.current;
     if (!g || !g.hit) return;
@@ -743,7 +852,7 @@ export default function TennisMiniGame({ onWin }) {
       b.vx *= -1;
     }
 
-    // ütközés ütőkkel (player whiffelhet is)
+    // ütközés ütőkkel
     tryRacketReturn(g.player.x, g.player.y, true);
     tryRacketReturn(g.bot.x, g.bot.y, false);
 
