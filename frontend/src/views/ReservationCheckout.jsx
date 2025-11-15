@@ -61,7 +61,7 @@ function ReservationCheckout() {
 
   const hours = reservation?.hours ?? 0;
 
-  // ---- DATE / TIME, SEASON, MORNING ----
+  // ---- DATE / TIME, SEASON, MORNING/AFTERNOON SPLIT ----
   const reservedDate = reservation ? new Date(reservation.reservedAt) : null;
 
   const dateStr = reservedDate
@@ -79,13 +79,39 @@ function ReservationCheckout() {
       })
     : "";
 
-  const isMorning = reservedDate ? reservedDate.getHours() < 12 : false;
-
   const monthIndex = reservedDate ? reservedDate.getMonth() : null; // 0-11
   const season =
     monthIndex !== null && monthIndex >= 4 && monthIndex <= 8
       ? "summer"
       : "winter";
+
+  // how many hours fall into morning (< 12:00) vs afternoon (>= 12:00)
+  let morningHoursCount = 0;
+  let afternoonHoursCount = 0;
+
+  if (reservedDate && hours > 0) {
+    const startTime = reservedDate.getTime();
+    const oneHourMs = 60 * 60 * 1000;
+
+    for (let i = 0; i < hours; i++) {
+      const current = new Date(startTime + i * oneHourMs);
+      const currentHour = current.getHours();
+      if (currentHour < 12) {
+        morningHoursCount++;
+      } else {
+        afternoonHoursCount++;
+      }
+    }
+  }
+
+  let sessionSplitLabel = "—";
+  if (morningHoursCount > 0 && afternoonHoursCount > 0) {
+    sessionSplitLabel = `${morningHoursCount} h morning + ${afternoonHoursCount} h afternoon`;
+  } else if (morningHoursCount > 0) {
+    sessionSplitLabel = `${morningHoursCount} h morning`;
+  } else if (afternoonHoursCount > 0) {
+    sessionSplitLabel = `${afternoonHoursCount} h afternoon`;
+  }
 
   // ---- INDOOR / OUTDOOR FROM COURT OBJECT ----
   const court = meta?.court;
@@ -102,30 +128,60 @@ function ReservationCheckout() {
     console.log("Checkout court meta:", court, "=> outside:", outside);
   }
 
-  // ---- PRICE CALCULATION BASED ON usePrice ----
-  let unitPrice = null;
+  // ---- PRICE CALCULATION BASED ON usePrice (MORNING + AFTERNOON) ----
+  let morningUnitPrice = null;
+  let afternoonUnitPrice = null;
   let basePrice = 0;
 
   if (reservation) {
-    console.log("price params:", { season, isMorning, isStudent, outside });
-
-    unitPrice = getPrice({
+    // hourly prices
+    morningUnitPrice = getPrice({
       season,
-      morning: isMorning,
+      morning: true,
       student: isStudent,
       outside,
     });
 
-    if (unitPrice != null) {
-      basePrice = unitPrice * hours;
-    } else {
-      basePrice = 0; // no price defined for this combination
+    afternoonUnitPrice = getPrice({
+      season,
+      morning: false,
+      student: isStudent,
+      outside,
+    });
+
+    console.log("price params:", {
+      season,
+      isStudent,
+      outside,
+      morningHoursCount,
+      afternoonHoursCount,
+      morningUnitPrice,
+      afternoonUnitPrice,
+    });
+
+    // accumulate base price using the split
+    if (morningHoursCount > 0 && morningUnitPrice != null) {
+      basePrice += morningUnitPrice * morningHoursCount;
+    }
+    if (afternoonHoursCount > 0 && afternoonUnitPrice != null) {
+      basePrice += afternoonUnitPrice * afternoonHoursCount;
     }
   }
+
+  const morningSubtotal =
+    morningUnitPrice != null ? morningUnitPrice * morningHoursCount : null;
+
+  const afternoonSubtotal =
+    afternoonUnitPrice != null ? afternoonUnitPrice * afternoonHoursCount : null;
 
   const discountedPrice = appliedCoupon
     ? Math.round(basePrice * 0.8) // 20% discount
     : basePrice;
+
+  const noPriceDefined =
+    !!reservation &&
+    ((morningHoursCount > 0 && morningUnitPrice == null) ||
+      (afternoonHoursCount > 0 && afternoonUnitPrice == null));
 
   // ---- COUPON HANDLING ----
   const handleApplyCoupon = () => {
@@ -133,8 +189,7 @@ function ReservationCheckout() {
 
     const match = availableCoupons.find(
       (c) =>
-        !c.used &&
-        c.code.toLowerCase() === couponInput.trim().toLowerCase()
+        !c.used && c.code.toLowerCase() === couponInput.trim().toLowerCase()
     );
 
     if (match) {
@@ -197,8 +252,6 @@ function ReservationCheckout() {
       });
   };
 
-  const noPriceDefined = reservation && unitPrice == null;
-
   return (
     <ReserveMenuProvider>
       <div className="select-none">
@@ -242,29 +295,52 @@ function ReservationCheckout() {
                         <b>{season === "summer" ? "Summer" : "Winter"}</b>
                       </div>
                       <div>
-                        Time of day:{" "}
-                        <b>{isMorning ? "Morning" : "Afternoon"}</b>
+                        Session split: <b>{sessionSplitLabel}</b>
                       </div>
                       <div>
-                        Court type:{" "}
-                        <b>{outside ? "Outdoor" : "Indoor"}</b>
+                        Court type: <b>{outside ? "Outdoor" : "Indoor"}</b>
                       </div>
                     </div>
                   </div>
 
-                  {/* Student toggle */}
+                  {/* Student toggle – prettier, clearer UI */}
                   <div className="mt-4 border-t border-dark-green-octa pt-4">
-                    <label className="flex items-center gap-3 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        className="accent-dark-green w-4 h-4"
-                        checked={isStudent}
-                        onChange={(e) => setIsStudent(e.target.checked)}
-                      />
-                      <span className="text-dark-green">
-                        Student reservation (student discount)
-                      </span>
-                    </label>
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <div className="text-dark-green font-medium">
+                          Student reservation
+                        </div>
+                        <div className="text-xs sm:text-sm text-dark-green-half">
+                          Discounted pricing for students. A valid student ID
+                          will be checked at the reception.
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsStudent((prev) => !prev)}
+                        className={`relative w-14 h-7 rounded-full cursor-pointer transition-colors duration-200 flex items-center ${
+                          isStudent ? "bg-dark-green" : "bg-gray-300"
+                        }`}
+                        aria-pressed={isStudent}
+                        aria-label="Toggle student reservation"
+                      >
+                        <span
+                          className={`absolute top-[3px] left-[3px] h-5 w-5 rounded-full bg-white shadow-md transition-transform duration-200 ${
+                            isStudent ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {isStudent && (
+                      <div className="mt-2 text-xs text-green-700 flex items-center gap-2">
+                        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-green-600 text-white text-[10px]">
+                          ✓
+                        </span>
+                        <span>Student discount is applied to your price.</span>
+                      </div>
+                    )}
                   </div>
                 </>
               ) : (
@@ -298,7 +374,7 @@ function ReservationCheckout() {
                   />
                   <button
                     onClick={handleApplyCoupon}
-                    className="px-4 py-2 rounded-2xl bg-dark-green text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-all duration-300"
+                    className="px-4 py-2 cursor-pointer rounded-2xl bg-dark-green text-white text-sm font-semibold hover:scale-105 active:scale-95 transition-all duration-300"
                   >
                     Apply
                   </button>
@@ -316,35 +392,58 @@ function ReservationCheckout() {
               </div>
 
               {/* Price section */}
-              <div className="flex flex-col gap-2 text-dark-green-half border-t border-dark-green-octa pt-4">
-                <div className="flex justify-between">
-                  <span>Hourly price</span>
-                  <span>
-                    {unitPrice != null
-                      ? `${unitPrice} Ft / hour`
-                      : "No price defined"}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Base price ({hours} hours)</span>
-                  <span>{basePrice} Ft</span>
-                </div>
+                <div className="flex flex-col gap-2 text-dark-green-half border-t border-dark-green-octa pt-4">
+                {morningHoursCount > 0 && (
+                    <div className="flex justify-between text-sm">
+                    <span>
+                        Morning ({morningHoursCount} h ×{" "}
+                        {morningUnitPrice != null ? `${morningUnitPrice} Ft` : "no price"})
+                    </span>
+                    <span>
+                        {morningSubtotal != null ? `${morningSubtotal} Ft` : "—"}
+                    </span>
+                    </div>
+                )}
+
+                {afternoonHoursCount > 0 && (
+                    <div className="flex justify-between text-sm">
+                    <span>
+                        Afternoon ({afternoonHoursCount} h ×{" "}
+                        {afternoonUnitPrice != null ? `${afternoonUnitPrice} Ft` : "no price"})
+                    </span>
+                    <span>
+                        {afternoonSubtotal != null ? `${afternoonSubtotal} Ft` : "—"}
+                    </span>
+                    </div>
+                )}
+
+                {/* base price csak akkor látszik, ha van kupon */}
                 {appliedCoupon && (
-                  <div className="flex justify-between text-sm text-dark-green">
+                    <div className="flex justify-between">
+                    <span>Base price ({hours} hours)</span>
+                    <span>{basePrice} Ft</span>
+                    </div>
+                )}
+
+                {appliedCoupon && (
+                    <div className="flex justify-between text-sm text-dark-green">
                     <span>Coupon discount (20%)</span>
                     <span>-{Math.round(basePrice * 0.2)} Ft</span>
-                  </div>
+                    </div>
                 )}
+
                 <div className="flex justify-between font-semibold text-dark-green text-lg mt-2">
-                  <span>Total</span>
-                  <span>{discountedPrice} Ft</span>
+                    <span>Total</span>
+                    <span>{discountedPrice} Ft</span>
                 </div>
-              </div>
+                </div>
+
 
               {noPriceDefined && (
                 <div className="text-xs text-red-600 mt-1">
-                  There is no price defined in the system for this combination
-                  (season / indoor–outdoor / time of day / student).
+                  There is no price defined in the system for at least one part
+                  of this reservation (season / indoor–outdoor / time of day /
+                  student).
                 </div>
               )}
 
@@ -355,7 +454,7 @@ function ReservationCheckout() {
               <button
                 onClick={handleConfirmReservation}
                 disabled={!reservation || isSubmitting || noPriceDefined}
-                className={`mt-4 bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center disabled:opacity-60 disabled:hover:scale-100`}
+                className={`mt-4 bg-dark-green disabled:cursor-not-allowed text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center disabled:opacity-60 disabled:hover:scale-100`}
               >
                 {isSubmitting
                   ? "Confirming reservation..."
