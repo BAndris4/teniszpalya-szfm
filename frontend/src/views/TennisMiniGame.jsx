@@ -70,7 +70,7 @@ export default function TennisMiniGame() {
   const BALL_SPEED_MAX = 5.5; 
 
   const BOT_SKILL = 1;
-  const BOT_WRONG_STROKE_STEP = 0.8;  
+  const BOT_WRONG_STROKE_STEP = 0.1;  
   const BOT_WRONG_STROKE_MAX = 1;   
 
   const COUNTDOWN_MS = 3000;
@@ -1140,7 +1140,7 @@ export default function TennisMiniGame() {
   return (
     <div className="w-full h-screen flex flex-col items-center justify-center border">
       <div className="w-full flex flex-col items-center gap-4 select-none">
-        <div className="w-full max-w-[760px]">
+        <div className="">
           <div className="relative flex items-center justify-center p-5">
             <canvas
               ref={canvasRef}
@@ -1194,7 +1194,7 @@ export default function TennisMiniGame() {
                       }}
                       className="px-4 py-2 rounded-[20px] border border-slate-300 text-slate-700 bg-white/80 hover:bg-white cursor-pointer transition-all duration-200 w-full"
                     >
-                      Back to home
+                      Back to coupons
                     </button>
                   </div>
                 </div>
@@ -1227,7 +1227,7 @@ export default function TennisMiniGame() {
                         navigate("/profile?tab=coupons");
                       }}
                     >
-                      Back to home
+                      Back to coupons
                     </button>
                   </div>
                 </div>
@@ -1300,7 +1300,7 @@ export default function TennisMiniGame() {
                         navigate("/profile?tab=coupons");
                       }}
                     >
-                      Back to home
+                      Back to coupons
                     </button>
                   </div>
                 </div>
