@@ -72,7 +72,7 @@ function Coupons() {
             <div className="mt-10 flex flex-col items-center justify-center text-dark-green-half">
                 <button
                     onClick={() => navigate("/minigame")}
-                    className="mb-5 inline-flex items-center gap-2 rounded-full bg-green px-5 py-2 text-sm font-semibold text-white shadow-md shadow-dark-green-octa hover:scale-[1.02] hover:shadow-lg active:scale-95 transition-transform duration-150"
+                    className="mb-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-green px-5 py-2 text-sm font-semibold text-white shadow-md shadow-dark-green-octa hover:scale-[1.02] hover:shadow-lg active:scale-95 transition-transform duration-150"
                 >
                     🎾 Play mini game &amp; win a coupon
                 </button>
@@ -99,7 +99,7 @@ function Coupons() {
             </div>
 
             {/* scroll – history pattern: max-h + overflow-y + padding-right */}
-            <div className="mt-1 px-2 max-h-[300px] pt-2 pb-5 overflow-y-auto pr-2">
+            <div className="mt-1 px-2 max-h-[270px] pt-2 pb-5 overflow-y-auto pr-2">
                 {/* több kupon egy sorban – dobozos grid */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {coupons.map((coupon) => {

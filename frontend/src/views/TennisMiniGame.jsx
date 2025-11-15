@@ -65,22 +65,23 @@ export default function TennisMiniGame() {
   const PADDLE_H = 12;
   const PADDLE_SPEED = 7.5;
 
-  const BALL_R = 9; // kicsit nagyobb, jobban látható
+  const BALL_R = 9;
   const BALL_SPEED_INIT = 3;
-  const BALL_SPEED_MAX = 3;
+  const BALL_SPEED_MAX = 5.5; 
 
   const BOT_SKILL = 1;
-  const BOT_WRONG_STROKE_PROB = 0.35;
+  const BOT_WRONG_STROKE_STEP = 0.8;  
+  const BOT_WRONG_STROKE_MAX = 1;   
 
-  const COUNTDOWN_MS = 3000; // 3..2..1..Go
-  
+  const COUNTDOWN_MS = 3000;
+
   useEffect(() => {
     if (authenticated === false) {
       navigate("/login");
     }
   }, [authenticated, navigate]);
-  
-    // ---------- INIT ASSETS ----------
+
+  // ---------- INIT ASSETS ----------
 
   useEffect(() => {
     const img = new Image();
@@ -138,6 +139,7 @@ export default function TennisMiniGame() {
     gameRef.current.countdownEnd = now + COUNTDOWN_MS;
     gameRef.current.rallyActive = false;
     gameRef.current.lastHitType = null;
+    gameRef.current.botWrongStrokeProb = 0;
   };
 
   const resetScore = () =>
@@ -188,6 +190,7 @@ export default function TennisMiniGame() {
       vfx: {
         trail: [], // csak trail, NINCS hit VFX
       },
+      botWrongStrokeProb: 0,
     };
   };
 
@@ -315,28 +318,53 @@ export default function TennisMiniGame() {
   };
 
   const drawCourt = (ctx) => {
-    // háttér gradient
-    const grad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
-    grad.addColorStop(0, "#f6f9f7");
-    grad.addColorStop(1, "#e9f3ef");
-    ctx.fillStyle = grad;
+    // Alap fehér(-es) háttér
+    ctx.fillStyle = "#f9fafb";
     ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-    // vignette
-    const vign = ctx.createRadialGradient(
-      WIDTH / 2,
-      HEIGHT / 2,
-      Math.min(WIDTH, HEIGHT) * 0.2,
-      WIDTH / 2,
-      HEIGHT / 2,
-      Math.max(WIDTH, HEIGHT) * 0.7
-    );
-    vign.addColorStop(0, "rgba(0,0,0,0)");
-    vign.addColorStop(1, "rgba(0,0,0,0.08)");
-    ctx.fillStyle = vign;
-    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    // Dekor: halvány félkörök bal/jobb oldalon (pályán kívül)
+    ctx.save();
+    ctx.globalAlpha = 0.85;
 
-    // kis "por" / fény pöttyök
+    const leftGrad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    leftGrad.addColorStop(0, "rgba(16,185,129,0.10)");
+    leftGrad.addColorStop(1, "rgba(59,130,246,0.02)");
+    ctx.fillStyle = leftGrad;
+    ctx.beginPath();
+    ctx.arc(COURT_LEFT - 80, HEIGHT * 0.22, 160, 0, Math.PI * 2);
+    ctx.fill();
+
+    const rightGrad = ctx.createLinearGradient(0, 0, 0, HEIGHT);
+    rightGrad.addColorStop(0, "rgba(52,211,153,0.06)");
+    rightGrad.addColorStop(1, "rgba(56,189,248,0.12)");
+    ctx.fillStyle = rightGrad;
+    ctx.beginPath();
+    ctx.arc(COURT_RIGHT + 90, HEIGHT * 0.8, 200, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+
+    // Dekor: nagyon halvány átlós csíkok felül és alul
+    ctx.save();
+    ctx.globalAlpha = 0.5;
+    ctx.strokeStyle = "rgba(148,163,184,0.18)";
+    ctx.lineWidth = 16;
+    for (let i = -WIDTH; i < WIDTH * 1.5; i += 90) {
+      // felső csíkok – a pálya felett
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i + WIDTH * 0.6, COURT_TOP - 10);
+      ctx.stroke();
+
+      // alsó csíkok – a pálya alatt
+      ctx.beginPath();
+      ctx.moveTo(i - 40, COURT_BOTTOM + 10);
+      ctx.lineTo(i + WIDTH * 0.6 - 40, HEIGHT);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // kis "por" / fény pöttyök a tetején
     ctx.save();
     ctx.globalAlpha = 0.25;
     for (let i = 0; i < 80; i++) {
@@ -348,6 +376,20 @@ export default function TennisMiniGame() {
       ctx.fill();
     }
     ctx.restore();
+
+    // enyhe vignette, hogy a pálya közepe fókuszban legyen
+    const vign = ctx.createRadialGradient(
+      WIDTH / 2,
+      HEIGHT / 2,
+      Math.min(WIDTH, HEIGHT) * 0.4,
+      WIDTH / 2,
+      HEIGHT / 2,
+      Math.max(WIDTH, HEIGHT) * 0.9
+    );
+    vign.addColorStop(0, "rgba(0,0,0,0)");
+    vign.addColorStop(1, "rgba(0,0,0,0.10)");
+    ctx.fillStyle = vign;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
     // pálya – zöld téglalap árnyékkal
     ctx.save();
@@ -672,14 +714,20 @@ export default function TennisMiniGame() {
 
   // ---------- GAME LOGIC ----------
 
+  const couponRequestedRef = useRef(false);
+
   const onGameWon = async (winner) => {
     setScore((s) => ({ ...s, over: true, winner }));
 
     if (winner === "player") {
+      if (couponRequestedRef.current) return;
+      couponRequestedRef.current = true;
+
       const code = await requestCouponFromAPI();
       setCoupon(code || "ERROR");
     }
   };
+
 
   const awardPoint = (who) => {
     if (gameRef.current) {
@@ -751,14 +799,13 @@ export default function TennisMiniGame() {
 
       // backend textet küld, nem JSON-t
       const code = await res.text();
+
       return code.trim();
     } catch (err) {
       console.error("Coupon API error:", err);
       return null;
     }
   };
-
-
 
   const isCountdownActive = () => {
     const g = gameRef.current;
@@ -866,17 +913,22 @@ export default function TennisMiniGame() {
       hit.playerNextAllowedAt = now + hit.cooldownMs;
       g.lastTouch = "player";
     } else {
-      // Bot stroke választás – lehet rossz oldal
+      
       const needFH = offset > 0;
-      const botChoosesFH =
-        Math.random() > BOT_WRONG_STROKE_PROB ? needFH : !needFH;
+      
+      const wrongProb = Math.min(
+        BOT_WRONG_STROKE_MAX,
+        Math.max(0, g.botWrongStrokeProb ?? 0)
+      );
 
+      const botChoosesFH =
+        Math.random() > wrongProb ? needFH : !needFH;
+  
       if (botChoosesFH !== needFH) return false;
+
       g.anim.botFacing = needFH ? 1 : -1;
-      // Botnál swing anim + hang csak akkor, ha tényleg találjuk a labdát (lejjebb)
     }
 
-    // Geometria: eléri-e az ütő a labdát?
     const extra = isPlayer ? 25 : 0;
 
     const withinY = isPlayer
@@ -907,12 +959,23 @@ export default function TennisMiniGame() {
     const norm = Math.max(-1, Math.min(1, offset / (PADDLE_W / 2)));
     const angle = norm * 0.6;
 
-    const speed = Math.min(BALL_SPEED_MAX, b.speed * 1.05 + 0.2);
+    const prevSpeed = b.speed;
+    const speed = Math.min(BALL_SPEED_MAX, prevSpeed * 1.05 + 0.2);
     b.speed = speed;
+
+    // minden tényleges sebességnövelésnél nő a bot rontási esélye
+    if (speed > prevSpeed) {
+      const current = g.botWrongStrokeProb ?? 0;
+      g.botWrongStrokeProb = Math.min(
+        BOT_WRONG_STROKE_MAX,
+        current + BOT_WRONG_STROKE_STEP
+      );
+    }
 
     const newVy =
       (isPlayer ? -1 : 1) * (0.9 + Math.random() * 0.3) * speed;
     const newVx = angle * speed;
+
 
     b.vx = newVx;
     b.vy = newVy;
