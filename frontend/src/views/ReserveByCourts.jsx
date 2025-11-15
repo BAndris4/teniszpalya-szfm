@@ -33,6 +33,30 @@ function ReserveByCourts() {
   const navigate = useNavigate();
   const { authenticated } = useCurrentUser();
 
+  const hasSelectedCourt = selectedCourt !== "Select a court!";
+
+
+  const monthIndex = date.getMonth();
+  const season =
+    monthIndex >= 4 && monthIndex <= 8 ? "summer" : "winter";
+  const isWinterSeason = season === "winter";
+
+  const selectedCourtId = hasSelectedCourt
+    ? Number(selectedCourt.split("#")[1])
+    : null;
+
+  const selectedCourtObj =
+    selectedCourtId != null
+      ? courts.find((c) => c.id === selectedCourtId) || null
+      : null;
+
+  // Feltételezve: court.isIndoor: boolean
+  const isSelectedCourtOutdoor =
+    selectedCourtObj && selectedCourtObj.outdoors === true;
+
+  const allTimesDisabledForCourt =
+    isWinterSeason && isSelectedCourtOutdoor;
+
   useEffect(() => {
     if (authenticated === false) {
       navigate("/login");
@@ -40,15 +64,29 @@ function ReserveByCourts() {
   }, [authenticated, navigate]);
 
   useEffect(() => {
+    if (!hasSelectedCourt) {
+      setFreeTimes([]);
+      setSelectedTime(null);
+      return;
+    }
+
     const generatedFreeTimes = timeList.filter(() => Math.random() > 0.5);
     setFreeTimes(generatedFreeTimes);
     setSelectedTime(null);
-  }, [date, length, selectedCourt, timeList]);
+  }, [date, length, selectedCourt, hasSelectedCourt, timeList]);
 
   useEffect(() => {
     setLength(1);
     setSelectedCourt("Select a court!");
+    setSelectedTime(null);
+    setFreeTimes([]);
   }, [date]);
+
+  useEffect(() => {
+    if (allTimesDisabledForCourt) {
+      setSelectedTime(null);
+    }
+  }, [allTimesDisabledForCourt]);
 
   const lowerLength = () => {
     if (length > 1) {
@@ -63,6 +101,7 @@ function ReserveByCourts() {
   };
 
   const handleReservation = () => {
+
     if (selectedTime === null || selectedCourt === "Select a court!") {
       alert("Please select a time and a court!");
       return;
@@ -75,7 +114,8 @@ function ReserveByCourts() {
     reservedAt.setHours(hoursNum, minutesNum, 0, 0);
 
     const courtID = Number(selectedCourt.split("#")[1]);
-    const selectedCourtObj = courts.find((c) => c.id === courtID) || null;
+    const selectedCourtObjLocal =
+      courts.find((c) => c.id === courtID) || null;
 
     const data = {
       createdAt: Date.now(),
@@ -90,7 +130,7 @@ function ReserveByCourts() {
         meta: {
           from: "byCourts",
           label: selectedCourt,
-          court: selectedCourtObj, // 👈 teljes court objektum átadva
+          court: selectedCourtObjLocal,
         },
       },
     });
@@ -138,7 +178,7 @@ function ReserveByCourts() {
 
               <div className="flex flex-col gap-2">
                 <div className="font-medium text-[16px] text-dark-green">
-                  Time
+                  Court
                 </div>
                 <div
                   className="bg-white border border-dark-green px-4 py-5 rounded-2xl flex flex-row justify-between items-center transition-all duration-300 shadow-md cursor-pointer"
@@ -160,41 +200,60 @@ function ReserveByCourts() {
                 </div>
                 {isCourtPickerOpen && (
                   <div className="flex flex-col max-h-[300px] overflow-y-scroll px-2 py-2 border border-dark-green-octa rounded-[8px] overflow-x-hidden gap-5 mt-2">
-                    {courts.map((court) => (
-                      <CourtCardSmall
-                        key={court.id}
-                        court={court}
-                        onClick={() =>
-                          setSelectedCourt("Tennis Court #" + court.id)
-                        }
-                        active={
-                          "Tennis Court #" + court.id === selectedCourt
-                        }
-                      />
-                    ))}
+                    {courts.map((court) => {
+                      const label = "Tennis Court #" + court.id;
+                      const isActive = label === selectedCourt;
+
+                      return (
+                        <CourtCardSmall
+                          key={court.id}
+                          court={court}
+                          onClick={() => setSelectedCourt(label)}
+                          active={isActive}
+                        />
+                      );
+                    })}
                   </div>
                 )}
               </div>
             </div>
 
             <div className="flex flex-col gap-13 py-28 bg-white border rounded-[20px] px-10 justify-center items-center border-dark-green-octa shadow-md w-[800px]">
-              <div className="grid grid-cols-4 gap-x-1.5 gap-y-[50px] w-full">
-                {timeList.map((time) => (
-                  <TimeBlock
-                    key={time}
-                    time={time}
-                    disabled={!freeTimes.includes(time)}
-                    onClick={() => setSelectedTime(time)}
-                    active={selectedTime === time}
-                  />
-                ))}
-              </div>
-              <div
-                className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center"
-                onClick={handleReservation}
-              >
-                Accept reservation
-              </div>
+              {hasSelectedCourt ? (
+                <>
+
+                  <div className="grid grid-cols-4 gap-x-1.5 gap-y-[50px] w-full">
+                    {timeList.map((time) => {
+                      const disabled =
+                        allTimesDisabledForCourt ||
+                        !freeTimes.includes(time);
+
+                      return (
+                        <TimeBlock
+                          key={time}
+                          time={time}
+                          disabled={disabled}
+                          onClick={() => {
+                            if (disabled) return;
+                            setSelectedTime(time);
+                          }}
+                          active={selectedTime === time}
+                        />
+                      );
+                    })}
+                  </div>
+                  <div
+                    className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center"
+                    onClick={handleReservation}
+                  >
+                    Accept reservation
+                  </div>
+                </>
+              ) : (
+                <div className="text-dark-green text-center text-lg opacity-70">
+                  Please select a court to see available times.
+                </div>
+              )}
             </div>
           </div>
         </div>

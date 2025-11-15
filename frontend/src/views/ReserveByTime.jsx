@@ -19,6 +19,12 @@ function ReserveByTime() {
   const navigate = useNavigate();
   const { authenticated } = useCurrentUser();
 
+  const monthIndex = date.getMonth(); // 0-11
+  const season = monthIndex >= 4 && monthIndex <= 8 ? "summer" : "winter";
+  const isWinterSeason = season === "winter";
+
+  const hasSelectedTime = time !== "Select a time!";
+
   useEffect(() => {
     if (authenticated === false) {
       navigate("/login");
@@ -49,6 +55,14 @@ function ReserveByTime() {
       return;
     }
 
+    const selectedCourtObj =
+      courts.find((c) => c.id === selectedCourt) || null;
+
+    if (!selectedCourtObj || selectedCourtObj.disabled) {
+      alert("This court is not available. Please select another court.");
+      return;
+    }
+
     const reservedAt = new Date(date);
     const [hoursStr, minutesStr] = time.split(":");
     const hoursNum = Number(hoursStr);
@@ -62,8 +76,6 @@ function ReserveByTime() {
       courtID: selectedCourt,
     };
 
-    const selectedCourtObj = courts.find((c) => c.id === selectedCourt) || null;
-
     navigate("/checkout", {
       state: {
         reservation: data,
@@ -72,29 +84,51 @@ function ReserveByTime() {
           label: selectedCourtObj
             ? selectedCourtObj.name || `Tennis Court #${selectedCourtObj.id}`
             : `Tennis Court #${selectedCourt}`,
-          court: selectedCourtObj, // 👈 itt is átadjuk a teljes courtot
+          court: selectedCourtObj,
         },
       },
     });
   };
 
   useEffect(() => {
+    if (!hasSelectedTime) {
+      setCourts([]);
+      setSelectedCourt(null);
+      return;
+    }
+
     fetch("http://localhost:5044/api/Courts")
       .then((response) => response.json())
       .then((data) => {
-        const updatedData = data.map((court) => ({
-          ...court,
-          disabled: Math.random() < 0.5,
-        }));
+        const updatedData = data.map((court) => {
+          const isOutdoor = court.outdoors === true;
+          let disabled = Math.random() < 0.5;
+          if (isWinterSeason && isOutdoor) {
+            disabled = true;
+          }
+
+          return {
+            ...court,
+            disabled,
+          };
+        });
         setCourts(updatedData);
       })
       .catch((error) => console.error("Error fetching data:", error));
-  }, [time, length, date]);
+  }, [time, length, date, isWinterSeason, hasSelectedTime]);
 
   const visibleCourts = courts.slice(courtPage * 6, (courtPage + 1) * 6);
   const showLeftChevron = courts.length >= 6 && courtPage > 0;
   const showRightChevron =
     courts.length >= 6 && (courtPage + 1) * 6 < courts.length;
+
+  useEffect(() => {
+    if (!selectedCourt) return;
+    const selected = courts.find((c) => c.id === selectedCourt);
+    if (selected && selected.disabled) {
+      setSelectedCourt(null);
+    }
+  }, [courts, selectedCourt]);
 
   return (
     <ReserveMenuProvider>
@@ -181,45 +215,78 @@ function ReserveByTime() {
             </div>
 
             <div className="flex flex-col gap-13 bg-white border rounded-[20px] px-10 justify-center items-center py-10 border-dark-green-octa shadow-md w-[800px]">
-              <div className="flex flex-row items-center gap-4 w-full">
-                <img
-                  src="./src/assets/full_chevron_left.svg"
-                  className={`cursor-pointer hover:scale-110 active:scale-90 transition-all duration-300 flex-shrink-0 ${
-                    !showLeftChevron ? "opacity-0 pointer-events-none" : ""
-                  }`}
-                  onClick={() => setCourtPage(courtPage - 1)}
-                />
+              {hasSelectedTime ? (
+                <>
+                  <div className="flex flex-row items-center gap-4 w-full">
+                    <img
+                      src="./src/assets/full_chevron_left.svg"
+                      className={`cursor-pointer hover:scale-110 active:scale-90 transition-all duration-300 flex-shrink-0 ${
+                        !showLeftChevron
+                          ? "opacity-0 pointer-events-none"
+                          : ""
+                      }`}
+                      onClick={() => setCourtPage(courtPage - 1)}
+                    />
 
-                <div className="flex-1">
-                  <div className="grid grid-cols-3 gap-x-[30px] gap-y-10">
-                    {visibleCourts.map((court) => (
-                      <div key={court.id}>
-                        <CourtCardMid
-                          court={court}
-                          active={court.id === selectedCourt}
-                          onClick={() => {
-                            if (!court.disabled) setSelectedCourt(court.id);
-                          }}
-                        />
+                    <div className="flex-1">
+                      <div className="grid grid-cols-3 gap-x-[30px] gap-y-10">
+                        {visibleCourts.map((court) => {
+                          const isOutdoor = court.outdoors === true;
+                          const isDisabled =
+                            court.disabled ||
+                            (isWinterSeason && isOutdoor); // extra safety
+
+                          return (
+                            <div
+                              key={court.id}
+                              className={`transition-opacity ${
+                                isDisabled
+                                  ? "opacity-40 pointer-events-none"
+                                  : ""
+                              }`}
+                              title={
+                                isWinterSeason && isOutdoor
+                                  ? "Outdoor courts are not available in winter season."
+                                  : ""
+                              }
+                            >
+                              <CourtCardMid
+                                court={court}
+                                active={court.id === selectedCourt}
+                                onClick={() => {
+                                  if (isDisabled) return;
+                                  setSelectedCourt(court.id);
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                <img
-                  src="./src/assets/full_chevron_right.svg"
-                  className={`cursor-pointer hover:scale-110 active:scale-90 transition-all duration-300 flex-shrink-0 ${
-                    !showRightChevron ? "opacity-0 pointer-events-none" : ""
-                  }`}
-                  onClick={() => setCourtPage(courtPage + 1)}
-                />
-              </div>
-              <div
-                className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center"
-                onClick={handleReservation}
-              >
-                Accept reservation
-              </div>
+                    <img
+                      src="./src/assets/full_chevron_right.svg"
+                      className={`cursor-pointer hover:scale-110 active:scale-90 transition-all duration-300 flex-shrink-0 ${
+                        !showRightChevron
+                          ? "opacity-0 pointer-events-none"
+                          : ""
+                      }`}
+                      onClick={() => setCourtPage(courtPage + 1)}
+                    />
+                  </div>
+
+                  <div
+                    className="bg-dark-green text-white font-bold text-[18px] py-4 rounded-[24px] shadow-md hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer w-full text-center"
+                    onClick={handleReservation}
+                  >
+                    Accept reservation
+                  </div>
+                </>
+              ) : (
+                <div className="text-dark-green text-center text-lg opacity-70">
+                  Please select a time to see available courts.
+                </div>
+              )}
             </div>
           </div>
         </div>
