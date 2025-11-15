@@ -75,6 +75,15 @@ namespace Teniszpalya.API.Controllers
                 CourtID = reservationDTO.CourtID
             };
 
+            var coupon = await _context.Coupons.FirstOrDefaultAsync(c => c.Code == reservationDTO.CouponCode);
+
+            if(coupon != null)
+            {
+                if (coupon.Used) return BadRequest(new { message = "Coupon code already used." });
+
+                coupon.Used = true;
+            }
+
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
             return Ok(new { message = "Reservation created sucessfully." });
