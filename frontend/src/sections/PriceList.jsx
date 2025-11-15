@@ -1,4 +1,5 @@
 import { useState } from "react";
+import usePrice from "../hooks/usePrice";
 
 const CheckItem = ({ text, light = false }) => (
   <div className="flex items-start gap-3">
@@ -23,7 +24,8 @@ const MembershipCard = ({ title, price, period = "/month", features, highlighted
     )}
 
     <div className="text-2xl sm:text-3xl font-semibold tracking-tight">
-      Ft {price.toLocaleString("hu-HU")}<span className={highlighted ? "text-white/60 text-base" : "text-dark-green-half text-base"}>{period}</span>
+      Ft {price.toLocaleString("hu-HU")}
+      <span className={highlighted ? "text-white/60 text-base" : "text-dark-green-half text-base"}>{period}</span>
     </div>
 
     <div className="mt-3 text-xl sm:text-2xl font-semibold">{title}</div>
@@ -85,6 +87,7 @@ const SeasonTable = ({ title, data }) => (
 
 export default function PriceList() {
   const [tab, setTab] = useState("membership");
+  const { getPrice } = usePrice();
 
   const membership = [
     {
@@ -124,34 +127,54 @@ export default function PriceList() {
     },
   ];
 
+  // közös sor-definíció a tábláknak (csak UI-hoz kell a label)
+  const rows = [
+    { label: "1 hour casual",         student: false, morning: false },
+    { label: "1 hour student",        student: true,  morning: false },
+    { label: "1 hour casual morning", student: false, morning: true },
+    { label: "1 hour student morning",student: true,  morning: true },
+  ];
+
   const summer = {
-    outside: [
-      { label: "1 hour casual", price: 4000 },
-      { label: "1 hour student", price: 3600 },
-      { label: "1 hour casual morning", price: 3200 },
-      { label: "1 hour student morning", price: 2800 },
-    ],
-    inside: [
-      { label: "1 hour casual", price: 9000 },
-      { label: "1 hour student", price: 8600 },
-      { label: "1 hour casual morning", price: 8200 },
-      { label: "1 hour casual student", price: 7800 },
-    ],
+    outside: rows.map(({ label, student, morning }) => ({
+      label,
+      price: getPrice({
+        season: "summer",
+        outside: true,
+        student,
+        morning,
+      }),
+    })),
+    inside: rows.map(({ label, student, morning }) => ({
+      label,
+      price: getPrice({
+        season: "summer",
+        outside: false,
+        student,
+        morning,
+      }),
+    })),
   };
 
   const winter = {
-    outside: [
-      { label: "1 hour casual" },
-      { label: "1 hour student" },
-      { label: "1 hour casual morning" },
-      { label: "1 hour student morning" },
-    ],
-    inside: [
-      { label: "1 hour casual", price: 7000 },
-      { label: "1 hour student", price: 6600 },
-      { label: "1 hour casual morning", price: 6200 },
-      { label: "1 hour casual student", price: 5800 },
-    ],
+    outside: rows.map(({ label, student, morning }) => ({
+      label,
+      price: getPrice({
+        season: "winter",
+        outside: true,
+        student,
+        morning,
+      }),
+    })),
+    inside: rows.map(({ label, student, morning }) => ({
+      label,
+      price: getPrice({
+        season: "winter",
+        outside: false,
+        student,
+        morning,
+      }),
+    })),
   };
 
   return (
@@ -161,7 +184,9 @@ export default function PriceList() {
 
       <div className="max-w-6xl mx-auto px-4">
         <div className="flex flex-col items-center gap-3">
-          <h2 className="text-3xl sm:text-5xl font-semibold text-dark-green text-center">Simple, transparent pricing</h2>
+          <h2 className="text-3xl sm:text-5xl font-semibold text-dark-green text-center">
+            Simple, transparent pricing
+          </h2>
           <p className="text-dark-green-half text-center">No contracts. No surprise fees.</p>
 
           {/* Tabs */}
