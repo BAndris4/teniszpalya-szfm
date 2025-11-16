@@ -24,6 +24,7 @@ function ReservationCheckout() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReservationOk, setIsReservationOk] = useState(false);
   const [error, setError] = useState(null);
+  const [createdReservationId, setCreatedReservationId] = useState(null);
 
   // if there is no reservation in state, show an error
   useEffect(() => {
@@ -236,10 +237,8 @@ function ReservationCheckout() {
       })
       .then((data) => {
         console.log("Reservation OK:", data);
+        setCreatedReservationId(data.reservationId);
         setIsReservationOk(true);
-        setTimeout(() => {
-          navigate("/");
-        }, 2500);
       })
       .catch((err) => {
         console.error("Error creating reservation:", err);
@@ -466,10 +465,18 @@ function ReservationCheckout() {
       </div>
       {isReservationOk && (
         <ConfirmResponsePopup
-          title={"Reservation Successful!"}
-          description={"Your booking has been confirmed"}
+          type="success"
+          title="Reservation Successful!"
+          description="Your booking has been confirmed"
+          showCalendarButton={!!createdReservationId}
+          reservationId={createdReservationId}
+          onCancel={() => {
+            setIsReservationOk(false);
+            navigate("/");          // itt lépünk vissza a főoldalra, ha bezárja a popupot
+          }}
         />
       )}
+
     </ReserveMenuProvider>
   );
 }
