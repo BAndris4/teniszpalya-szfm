@@ -18,6 +18,7 @@ function ReserveByCourts() {
     const [timeList, setTimeList] = useState(["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"]);
     const [freeTimes, setFreeTimes] = useState([]);
     const [isReservationOk, setIsReservationOk] = useState(false);
+    const [createdReservationId, setCreatedReservationId] = useState(null);
     
     const navigate = useNavigate();
 
@@ -85,10 +86,8 @@ function ReserveByCourts() {
         .then(response => response.json())
         .then(data => {
             console.log(data);
+            setCreatedReservationId(data.reservationId);
             setIsReservationOk(true);
-            setTimeout(() => {
-                navigate("/");
-            }, 2500);
         })
         .catch(error => console.error("Error:", error));
     }
@@ -154,7 +153,27 @@ function ReserveByCourts() {
                     </div>
                 </div>
             </div>
-            {isReservationOk && <ConfirmResponsePopup title={"Reservation Successful!"} description={"Your booking has been confirmed"}/>}
+            {isReservationOk && (
+                <ConfirmResponsePopup
+                    title="Reservation Successful!"
+                    description={
+                        <div className="flex flex-col gap-4">
+                            <span>Your booking has been confirmed.</span>
+
+                            {createdReservationId && (
+                                <button
+                                    className="bg-[#4285F4] text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+                                    onClick={() => {
+                                        window.location.href = `http://localhost:5044/api/google/auth?reservationId=${createdReservationId}`;
+                                    }}
+                                >
+                                    Add to Google Calendar
+                                </button>
+                            )}
+                        </div>
+                    }
+                />
+            )}
         </ReserveMenuProvider>
     );
 }

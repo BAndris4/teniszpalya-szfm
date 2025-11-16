@@ -77,7 +77,7 @@ namespace Teniszpalya.API.Controllers
 
             _context.Reservations.Add(reservation);
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Reservation created sucessfully." });
+            return Ok(new { message = "Reservation created sucessfully.", reservationId = reservation.ID });
         }
 
         [Authorize]
