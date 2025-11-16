@@ -71,7 +71,7 @@ public class GoogleController : ControllerBase
 
         await AddToCalendar(tokenResponse.AccessToken, reservation);
 
-        return Ok("Added to Google Calendar!");
+        return Redirect("http://localhost:5173/");
     }
 
     private async Task AddToCalendar(string accessToken, Reservation reservation)
