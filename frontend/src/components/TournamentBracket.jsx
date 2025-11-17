@@ -214,23 +214,43 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
   // Calculate vertical spacing based on round
   const marginTop = roundIndex > 0 ? `${roundIndex * 3}rem` : "0";
 
+  // Pair matches for connector rendering (two matches feed into one next-round match)
+  const pairs = [];
+  for (let i = 0; i < round.matches.length; i += 2) {
+    pairs.push(round.matches.slice(i, i + 2));
+  }
+
   return (
     <div className="flex flex-col" style={{ marginTop }}>
       <h3 className="mb-3 text-center text-sm font-semibold text-dark-green">
         {displayName}
       </h3>
       <div className="flex flex-col gap-6">
-        {round.matches.map((match) => (
-          <MatchCard
-            key={match.id}
-            match={match}
-            side={side}
-            isAdmin={isAdmin}
-            savingId={savingId}
-            onSubmitResult={onSubmitResult}
-            scores={scores}
-            setScores={setScores}
-          />
+        {pairs.map((pair, idx) => (
+          <div key={`pair-${idx}`} className="relative flex flex-col gap-6">
+            {/* Vertical connector across the pair */}
+            {side !== "final" && pair.length === 2 && (
+              <div
+                className={
+                  "absolute inset-y-0 w-px bg-gray-300 " +
+                  (side === "left" ? "right-[-16px]" : "left-[-16px]")
+                }
+              />
+            )}
+
+            {pair.map((match) => (
+              <MatchCard
+                key={match.id}
+                match={match}
+                side={side}
+                isAdmin={isAdmin}
+                savingId={savingId}
+                onSubmitResult={onSubmitResult}
+                scores={scores}
+                setScores={setScores}
+              />
+            ))}
+          </div>
         ))}
       </div>
     </div>
