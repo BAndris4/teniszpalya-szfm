@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import { ReserveMenuProvider } from "../contexts/ReserveMenuContext";
+import TournamentBracket from "../components/TournamentBracket";
 
 // Floating animation for the "no tournaments" icon
 const floatingAnimation = {
@@ -29,6 +30,7 @@ function Tournaments() {
     maxParticipants: 16, 
     fee: 0 
   });
+  const [bracketTournamentId, setBracketTournamentId] = useState(null);
   const navigate = useNavigate();
 
   const fetchTournaments = async () => {
@@ -213,7 +215,15 @@ function Tournaments() {
               </motion.div>
             ) : (
               <div className="grid gap-6 md:grid-cols-2">
-                {tournaments.map((t, idx) => (
+                {tournaments
+                  .filter(t => {
+                    // Show Upcoming tournaments to everyone
+                    if (t.status === 0) return true;
+                    // Show InProgress/Completed only to participants
+                    if (!user) return false;
+                    return t.registeredUserIds?.includes(user.id);
+                  })
+                  .map((t, idx) => (
                   <motion.div
                     key={t.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -221,7 +231,14 @@ function Tournaments() {
                     transition={{ duration: 0.3, delay: idx * 0.05 }}
                     className="relative p-6 bg-white rounded-3xl shadow-xl border border-green-100 hover:shadow-2xl hover:border-green-200 transition-all duration-300 overflow-hidden group cursor-pointer"
                     whileHover={{ y: -4 }}
-                    onClick={() => navigate(`/tournaments/${t.id}`)}
+                    onClick={() => {
+                      // If tournament is InProgress or Completed, show bracket
+                      if (t.status === 1 || t.status === 2) {
+                        setBracketTournamentId(t.id);
+                      } else {
+                        navigate(`/tournaments/${t.id}`);
+                      }
+                    }}
                   >
                     {/* Decorative animated elements */}
                     <motion.div 
@@ -296,6 +313,14 @@ function Tournaments() {
           </motion.div>
         </div>
       </div>
+      
+      {/* Bracket Modal */}
+      {bracketTournamentId && (
+        <TournamentBracket
+          tournamentId={bracketTournamentId}
+          onClose={() => setBracketTournamentId(null)}
+        />
+      )}
       </div>
     </ReserveMenuProvider>
   );
