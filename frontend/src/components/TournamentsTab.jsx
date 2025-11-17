@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import { fmtDateTime } from "../utils/dates";
 import ConfirmResponsePopup from "../components/ConfirmResponsePopup";
+import TournamentBracket from "../components/TournamentBracket";
 
 const API_BASE = "http://localhost:5044/api/tournaments";
 
@@ -38,6 +39,9 @@ export default function TournamentsTab() {
   
   // --- start tournament ---
   const [startingId, setStartingId] = useState(null);
+  
+  // --- bracket view ---
+  const [viewBracketId, setViewBracketId] = useState(null);
 
   // --- popup (confirm / success) ---
   const [popupConfig, setPopupConfig] = useState(null);
@@ -761,9 +765,6 @@ export default function TournamentsTab() {
                       const participantsInfo =
                         participantsByTournament[t.id] || {};
                       const isExpanded = expandedId === t.id;
-                      
-                      // DEBUG
-                      console.log(`Tournament ${t.id}: status=${t.status}, current=${current}`);
 
                       return (
                         <>
@@ -792,6 +793,19 @@ export default function TournamentsTab() {
                             </Td>
                             <Td>
                               <div className="flex gap-2">
+                                {/* View Bracket - csak InProgress vagy Completed */}
+                                {(t.status === 1 || t.status === 2) && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setViewBracketId(t.id);
+                                    }}
+                                    className="cursor-pointer rounded-lg border border-blue-600 px-3 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-50"
+                                  >
+                                    View Bracket
+                                  </button>
+                                )}
                                 {/* Start button - csak Upcoming és >= 2 participant */}
                                 {t.status === 0 && current >= 2 && (
                                   <button
@@ -974,6 +988,14 @@ export default function TournamentsTab() {
             popupConfig.onCancel?.();
             setPopupConfig(null);
           }}
+        />
+      )}
+      
+      {/* Bracket Modal */}
+      {viewBracketId && (
+        <TournamentBracket
+          tournamentId={viewBracketId}
+          onClose={() => setViewBracketId(null)}
         />
       )}
     </div>
