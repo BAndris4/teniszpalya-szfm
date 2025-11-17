@@ -102,21 +102,21 @@ public class Program
         {
             var adminUser = new User
             {
-                FirstName = "Admin",
-                LastName = "User",
-                Email = "admin@test.com",
+                FirstName = "admin",
+                LastName = "admin",
+                Email = "admin@admin.com",
                 PhoneNumber = "+36301234567",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
                 RoleID = 2 // Admin role
             };
 
             var regularUser = new User
             {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "test@test.com",
+                FirstName = "user",
+                LastName = "user",
+                Email = "user@user.com",
                 PhoneNumber = "+36307654321",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("test123"),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("user"),
                 RoleID = 1 // Regular user role
             };
 
@@ -130,7 +130,7 @@ public class Program
             var courts = new[]
             {
                 new Court { Material = "Clay", Outdoors = true },
-                new Court { Material = "Hard", Outdoors = true },
+                new Court { Material = "Hard", Outdoors = false },
                 new Court { Material = "Grass", Outdoors = true },
                 new Court { Material = "Hard", Outdoors = false }
             };
