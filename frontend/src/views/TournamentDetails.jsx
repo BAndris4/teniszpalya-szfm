@@ -390,7 +390,7 @@ function TournamentDetails() {
                             required
                             value={editForm.title}
                             onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent"
+                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent"
                           />
                         </div>
 
@@ -400,7 +400,7 @@ function TournamentDetails() {
                             value={editForm.description}
                             onChange={(e) => setEditForm({...editForm, description: e.target.value})}
                             rows={4}
-                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent resize-none"
+                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent resize-none"
                           />
                         </div>
 
@@ -411,7 +411,7 @@ function TournamentDetails() {
                             required
                             value={editForm.startDate}
                             onChange={(e) => setEditForm({...editForm, startDate: e.target.value})}
-                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent"
+                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent"
                           />
                         </div>
 
@@ -421,7 +421,7 @@ function TournamentDetails() {
                             type="text"
                             value={editForm.location}
                             onChange={(e) => setEditForm({...editForm, location: e.target.value})}
-                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent"
+                            className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent"
                           />
                         </div>
 
@@ -434,7 +434,7 @@ function TournamentDetails() {
                               min="1"
                               value={editForm.maxParticipants}
                               onChange={(e) => setEditForm({...editForm, maxParticipants: e.target.value})}
-                              className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent"
+                              className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent"
                             />
                           </div>
 
@@ -446,7 +446,7 @@ function TournamentDetails() {
                               min="0"
                               value={editForm.fee}
                               onChange={(e) => setEditForm({...editForm, fee: e.target.value})}
-                              className="w-full px-4 py-3 border border-green-200 rounded-xl focus:ring-2 focus:ring-green focus:border-transparent"
+                              className="w-full px-4 py-3 border border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green/60 focus:border-transparent"
                             />
                           </div>
                         </div>
