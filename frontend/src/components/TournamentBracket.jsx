@@ -60,9 +60,9 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   if (loading) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="rounded-2xl bg-gradient-to-br from-light-green/30 to-white p-8 shadow-xl border-2 border-green">
-          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-green border-t-transparent mb-4"></div>
-          <p className="text-dark-green font-semibold">Loading bracket...</p>
+        <div className="rounded-xl bg-white p-8 shadow-lg">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-gray-300 border-t-gray-600 mb-3"></div>
+          <p className="text-gray-700">Loading bracket...</p>
         </div>
       </div>
     );
@@ -71,11 +71,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   if (error) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="rounded-2xl bg-gradient-to-br from-light-green/30 to-white p-8 shadow-xl border-2 border-green">
-          <p className="mb-4 text-red-600 font-semibold">{error}</p>
+        <div className="rounded-xl bg-white p-8 shadow-lg">
+          <p className="mb-4 text-red-600">{error}</p>
           <button
             onClick={onClose}
-            className="rounded-lg bg-green px-6 py-2 text-white font-semibold hover:bg-green/90 transition-colors"
+            className="rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
           >
             Close
           </button>
@@ -87,11 +87,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   if (!bracket || !bracket.rounds || bracket.rounds.length === 0) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-        <div className="rounded-2xl bg-gradient-to-br from-light-green/30 to-white p-8 shadow-xl border-2 border-green">
-          <p className="mb-4 text-dark-green font-semibold">No bracket data available</p>
+        <div className="rounded-xl bg-white p-8 shadow-lg">
+          <p className="mb-4 text-gray-700">No bracket data available</p>
           <button
             onClick={onClose}
-            className="rounded-lg bg-green px-6 py-2 text-white font-semibold hover:bg-green/90 transition-colors"
+            className="rounded-lg bg-gray-600 px-4 py-2 text-white hover:bg-gray-700"
           >
             Close
           </button>
@@ -155,9 +155,9 @@ export default function TournamentBracket({ tournamentId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/50 p-4">
-      <div className="mx-auto max-w-7xl rounded-2xl bg-gradient-to-br from-light-green/40 via-white to-light-green/20 p-6 shadow-2xl border-2 border-green">
+      <div className="mx-auto max-w-7xl rounded-xl bg-white p-6 shadow-xl">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between border-b-2 border-green/30 pb-4">
+        <div className="mb-6 flex items-center justify-between border-b pb-4">
           <div>
             <h2 className="text-2xl font-bold text-dark-green">
               {bracket.tournamentTitle}
@@ -168,7 +168,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="rounded-lg bg-green px-6 py-2 text-white font-semibold hover:bg-green/90 transition-colors shadow-md"
+            className="rounded-lg bg-gray-200 px-4 py-2 text-gray-700 hover:bg-gray-300"
           >
             Close
           </button>
@@ -288,7 +288,7 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 {/* Vertical line connecting the two matches */}
                 <div
                   className={
-                    "absolute w-[2px] bg-green/60 " +
+                    "absolute w-[2px] bg-gray-400 " +
                     (side === "left"
                       ? "right-[-50px] top-[25%] bottom-[25%]"
                       : side === "right"
@@ -326,55 +326,55 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
 
   return (
-    <div className="relative w-52 rounded-lg border-2 border-green/50 bg-gradient-to-br from-light-green/20 to-white shadow-lg hover:shadow-xl transition-shadow">
+    <div className="relative w-52 rounded-lg border-2 border-gray-300 bg-white shadow-md">
       {/* Connector lines to next round */}
       {side === "left" && (
-        <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-green/60" />
+        <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
       )}
       {side === "right" && (
-        <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-green/60" />
+        <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
       )}
       {side === "middle" && (
         <>
-          <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-green/60" />
-          <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-green/60" />
+          <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
+          <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
         </>
       )}
       {/* Player 1 */}
       <div
-        className={`border-b border-green/30 px-3 py-2 ${
+        className={`border-b px-3 py-2 ${
           isCompleted && winner?.id === match.player1?.id
-            ? "bg-green/30 font-bold text-dark-green"
-            : "text-dark-green-half"
+            ? "bg-blue-100 font-semibold"
+            : ""
         }`}
       >
-        <p className="text-sm">{player1Name}</p>
+        <p className="text-sm text-gray-800">{player1Name}</p>
       </div>
 
       {/* Player 2 */}
       <div
         className={`px-3 py-2 ${
           isCompleted && winner?.id === match.player2?.id
-            ? "bg-green/30 font-bold text-dark-green"
-            : "text-dark-green-half"
+            ? "bg-blue-100 font-semibold"
+            : ""
         }`}
       >
-        <p className="text-sm">{player2Name}</p>
+        <p className="text-sm text-gray-800">{player2Name}</p>
       </div>
 
       {/* Score */}
       {match.score && (
-        <div className="border-t border-green/30 bg-light-green/10 px-3 py-1 text-center">
-          <p className="text-xs text-dark-green font-semibold">{match.score}</p>
+        <div className="border-t bg-gray-50 px-3 py-1 text-center">
+          <p className="text-xs text-gray-600">{match.score}</p>
         </div>
       )}
 
       {canSet && (
-        <div className="space-y-2 border-t border-green/30 p-2 bg-light-green/5">
+        <div className="space-y-2 border-t p-2">
           <input
             type="text"
             placeholder="Score (e.g. 6-4, 6-3)"
-            className="w-full rounded border-2 border-green/30 px-2 py-1 text-xs focus:border-green focus:outline-none"
+            className="w-full rounded border px-2 py-1 text-xs"
             value={scores[match.id] || ""}
             onChange={(e) =>
               setScores((s) => ({ ...s, [match.id]: e.target.value }))
@@ -382,14 +382,14 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
           />
           <div className="flex gap-2">
             <button
-              className="flex-1 rounded bg-green px-2 py-1 text-xs font-bold text-white disabled:opacity-50 hover:bg-green/90 transition-colors shadow-md"
+              className="flex-1 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50 hover:bg-blue-700"
               disabled={savingId === match.id}
               onClick={() => onSubmitResult(match, match.player1.id)}
             >
               {savingId === match.id ? "Saving..." : "P1 wins"}
             </button>
             <button
-              className="flex-1 rounded bg-dark-green px-2 py-1 text-xs font-bold text-white disabled:opacity-50 hover:bg-dark-green/90 transition-colors shadow-md"
+              className="flex-1 rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50 hover:bg-green-700"
               disabled={savingId === match.id}
               onClick={() => onSubmitResult(match, match.player2.id)}
             >

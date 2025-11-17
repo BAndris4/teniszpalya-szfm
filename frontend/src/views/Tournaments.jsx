@@ -4,7 +4,6 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "../components/Navbar";
 import { ReserveMenuProvider } from "../contexts/ReserveMenuContext";
-import TournamentBracket from "../components/TournamentBracket";
 
 // Floating animation for the "no tournaments" icon
 const floatingAnimation = {
@@ -30,7 +29,6 @@ function Tournaments() {
     maxParticipants: 16, 
     fee: 0 
   });
-  const [bracketTournamentId, setBracketTournamentId] = useState(null);
   const navigate = useNavigate();
 
   const fetchTournaments = async () => {
@@ -194,36 +192,37 @@ function Tournaments() {
                 />
                 <p className="mt-4 text-dark-green-half text-lg">Loading tournaments...</p>
               </motion.div>
-            ) : tournaments.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-green-100"
-              >
-                <motion.svg 
-                  className="w-24 h-24 mx-auto mb-6 text-dark-green-half"
-                  animate={floatingAnimation}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+            ) : (() => {
+              const filteredTournaments = tournaments.filter(t => {
+                // Show Upcoming tournaments to everyone
+                if (t.status === 0) return true;
+                // Show InProgress/Completed only to participants
+                if (!user) return false;
+                return t.registeredUserIds?.includes(user.id);
+              });
+              
+              return filteredTournaments.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-green-100"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                </motion.svg>
-                <p className="text-2xl font-semibold text-dark-green">No tournaments available yet.</p>
-                <p className="text-base text-dark-green-half mt-2">Check back later for upcoming competitions!</p>
-              </motion.div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {tournaments
-                  .filter(t => {
-                    // Show Upcoming tournaments to everyone
-                    if (t.status === 0) return true;
-                    // Show InProgress/Completed only to participants
-                    if (!user) return false;
-                    return t.registeredUserIds?.includes(user.id);
-                  })
-                  .map((t, idx) => (
+                  <motion.svg 
+                    className="w-24 h-24 mx-auto mb-6 text-dark-green-half"
+                    animate={floatingAnimation}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </motion.svg>
+                  <p className="text-2xl font-semibold text-dark-green">No tournaments available yet.</p>
+                  <p className="text-base text-dark-green-half mt-2">Check back later for upcoming competitions!</p>
+                </motion.div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {filteredTournaments.map((t, idx) => (
                   <motion.div
                     key={t.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -232,9 +231,9 @@ function Tournaments() {
                     className="relative p-6 bg-white rounded-3xl shadow-xl border border-green-100 hover:shadow-2xl hover:border-green-200 transition-all duration-300 overflow-hidden group cursor-pointer"
                     whileHover={{ y: -4 }}
                     onClick={() => {
-                      // If tournament is InProgress or Completed, show bracket
+                      // If tournament is InProgress or Completed, show bracket page
                       if (t.status === 1 || t.status === 2) {
-                        setBracketTournamentId(t.id);
+                        navigate(`/tournaments/${t.id}/bracket`);
                       } else {
                         navigate(`/tournaments/${t.id}`);
                       }
@@ -306,21 +305,14 @@ function Tournaments() {
                       </div>
                     </div>
                   </motion.div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              );
+            })()}
 
           </motion.div>
         </div>
       </div>
-      
-      {/* Bracket Modal */}
-      {bracketTournamentId && (
-        <TournamentBracket
-          tournamentId={bracketTournamentId}
-          onClose={() => setBracketTournamentId(null)}
-        />
-      )}
       </div>
     </ReserveMenuProvider>
   );
