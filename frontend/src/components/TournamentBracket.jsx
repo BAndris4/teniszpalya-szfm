@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useCurrentUser } from "../hooks/useCurrentUser";
 
 // Use the same API base as TournamentsTab
 const API_BASE = "http://localhost:5044/api/tournaments";
@@ -7,6 +8,9 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   const [bracket, setBracket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [savingId, setSavingId] = useState(null);
+  const [scores, setScores] = useState({});
+  const { user } = useCurrentUser();
 
   useEffect(() => {
     loadBracket();
@@ -24,6 +28,32 @@ export default function TournamentBracket({ tournamentId, onClose }) {
       setError(e?.message || "Failed to load bracket");
     } finally {
       setLoading(false);
+    }
+  }
+
+  const isAdmin = user?.roleID === 2;
+
+  async function submitResult(match, winnerId) {
+    try {
+      setSavingId(match.id);
+      const res = await fetch(
+        `${API_BASE}/${tournamentId}/matches/${match.id}/result`,
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            winnerId,
+            score: scores[match.id] || null,
+          }),
+        }
+      );
+      if (!res.ok) throw new Error(`Failed to save result: ${res.status}`);
+      await loadBracket();
+    } catch (e) {
+      setError(e?.message || "Failed to save result");
+    } finally {
+      setSavingId(null);
     }
   }
 
@@ -101,7 +131,16 @@ export default function TournamentBracket({ tournamentId, onClose }) {
         {isFinal ? (
           // Single final match
           <div className="flex items-center justify-center py-8">
-            <RoundColumn round={bracket.rounds[0]} roundIndex={0} isFinal={true} />
+            <RoundColumn
+              round={bracket.rounds[0]}
+              roundIndex={0}
+              isFinal={true}
+              isAdmin={isAdmin}
+              savingId={savingId}
+              onSubmitResult={submitResult}
+              scores={scores}
+              setScores={setScores}
+            />
           </div>
         ) : (
           // Two-sided bracket
@@ -114,6 +153,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={round}
                   roundIndex={idx}
                   totalInSide={leftRounds.length}
+                  isAdmin={isAdmin}
+                  savingId={savingId}
+                  onSubmitResult={submitResult}
+                  scores={scores}
+                  setScores={setScores}
                 />
               ))}
             </div>
@@ -125,6 +169,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={bracket.rounds[bracket.rounds.length - 1]}
                   roundIndex={totalRounds - 1}
                   isFinal={true}
+                  isAdmin={isAdmin}
+                  savingId={savingId}
+                  onSubmitResult={submitResult}
+                  scores={scores}
+                  setScores={setScores}
                 />
               </div>
             )}
@@ -137,6 +186,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={round}
                   roundIndex={idx}
                   totalInSide={rightRounds.length}
+                  isAdmin={isAdmin}
+                  savingId={savingId}
+                  onSubmitResult={submitResult}
+                  scores={scores}
+                  setScores={setScores}
                 />
               ))}
             </div>
@@ -147,7 +201,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   );
 }
 
-function RoundColumn({ round, roundIndex, isFinal, totalInSide }) {
+function RoundColumn({ round, roundIndex, isFinal, totalInSide, isAdmin, savingId, onSubmitResult, scores, setScores }) {
   const roundNames = ["Round 1", "Round 2", "Semi-Finals", "Finals"];
   const displayName = isFinal
     ? "Finals"
@@ -163,18 +217,27 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide }) {
       </h3>
       <div className="flex flex-col gap-4">
         {round.matches.map((match) => (
-          <MatchCard key={match.id} match={match} />
+          <MatchCard
+            key={match.id}
+            match={match}
+            isAdmin={isAdmin}
+            savingId={savingId}
+            onSubmitResult={onSubmitResult}
+            scores={scores}
+            setScores={setScores}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function MatchCard({ match }) {
+function MatchCard({ match, isAdmin, savingId, onSubmitResult, scores, setScores }) {
   const player1Name = match.player1?.name || "TBD";
   const player2Name = match.player2?.name || "TBD";
   const isCompleted = match.status === 2;
   const winner = match.winner;
+  const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
 
   return (
     <div className="w-48 rounded-lg border-2 border-dark-green-octa bg-white shadow-md">
@@ -204,6 +267,36 @@ function MatchCard({ match }) {
       {match.score && (
         <div className="border-t bg-gray-50 px-3 py-1 text-center">
           <p className="text-xs text-gray-600">{match.score}</p>
+        </div>
+      )}
+
+      {canSet && (
+        <div className="space-y-2 border-t p-2">
+          <input
+            type="text"
+            placeholder="Score (e.g. 6-4, 6-3)"
+            className="w-full rounded border px-2 py-1 text-xs"
+            value={scores[match.id] || ""}
+            onChange={(e) =>
+              setScores((s) => ({ ...s, [match.id]: e.target.value }))
+            }
+          />
+          <div className="flex gap-2">
+            <button
+              className="flex-1 rounded bg-green-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              disabled={savingId === match.id}
+              onClick={() => onSubmitResult(match, match.player1.id)}
+            >
+              {savingId === match.id ? "Saving..." : "P1 wins"}
+            </button>
+            <button
+              className="flex-1 rounded bg-blue-600 px-2 py-1 text-xs font-semibold text-white disabled:opacity-50"
+              disabled={savingId === match.id}
+              onClick={() => onSubmitResult(match, match.player2.id)}
+            >
+              {savingId === match.id ? "Saving..." : "P2 wins"}
+            </button>
+          </div>
         </div>
       )}
     </div>
