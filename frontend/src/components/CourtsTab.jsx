@@ -34,7 +34,7 @@ export default function CourtsTab() {
 
   useEffect(() => {
     if (!me) return;
-    if (me.firstName !== "admin") navigate("/");
+    if (me.roleID !== 2) navigate("/");
   }, [me, navigate]);
 
   // --- load courts ---

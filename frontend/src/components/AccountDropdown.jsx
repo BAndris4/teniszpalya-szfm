@@ -48,7 +48,7 @@ function AccountDropdown({ hidden, user }) {
                 </div>
 
                 {/* Admin Panel - csak adminoknak */}
-                {user.firstName === "admin" && (
+                {user.roleID === 2 && (
                     <div
                         className="cursor-pointer flex gap-2.5 transition-all duration-200 w-full justify-end hover:translate-x-[-2px] group hover:bg-gray-50 py-1 px-2 rounded-lg"
                         onClick={() => navigate("/admin")}

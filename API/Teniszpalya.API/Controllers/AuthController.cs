@@ -126,7 +126,7 @@ namespace Teniszpalya.API.Controllers
 
             if (user == null) return NotFound();
 
-            return Ok(new { user.ID, user.FirstName, user.LastName, user.Email, user.PhoneNumber });
+            return Ok(new { user.ID, user.FirstName, user.LastName, user.Email, user.PhoneNumber, user.RoleID });
         }  
     }
 }
