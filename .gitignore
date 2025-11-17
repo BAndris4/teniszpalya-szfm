@@ -9,6 +9,7 @@
 *.db-wal
 *.sln
 *.db
+*.env
 
 # User-specific files
 *.suo
