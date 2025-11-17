@@ -8,7 +8,7 @@ import { useSearchParams } from "react-router-dom";
 export function useAdminTabSync(defaultTab = "reservations") {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const sanitize = (v) => (v === "reservations" || v === "courts" ? v : null);
+  const sanitize = (v) => (v === "reservations" || v === "courts" || v === "tournaments" ? v : null);
 
   // Olvasás: URL -> localStorage -> default
   const urlTab = sanitize(searchParams.get("tab"));
