@@ -15,6 +15,8 @@ import CourtsPage from './views/CourtsPage.jsx';
 import Admin from './views/AdminPanel.jsx';
 import Tournaments from './views/Tournaments.jsx';
 import TournamentDetails from './views/TournamentDetails.jsx';
+import TennisMiniGame from './views/TennisMiniGame.jsx';
+import ReservationCheckout from './views/ReservationCheckout.jsx';
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/tournaments" element={<Tournaments />} />
           <Route path="/tournaments/:id" element={<TournamentDetails />} />
+          <Route path="/minigame" element={<TennisMiniGame />} />
+          <Route path="/checkout" element={<ReservationCheckout />} />
         </Routes>
     </BrowserRouter>
   )

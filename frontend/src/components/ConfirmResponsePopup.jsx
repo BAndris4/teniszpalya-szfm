@@ -1,4 +1,3 @@
-// src/components/ConfirmResponsePopup.jsx
 import { useEffect } from "react";
 
 function ConfirmResponsePopup({
@@ -7,16 +6,20 @@ function ConfirmResponsePopup({
   type = "success",             // "success" | "confirm" | "error"
   confirmText = "Confirm",
   cancelText = "Cancel",
-  onConfirm,                    // confirm módban
-  onCancel,                     // háttérre katt / cancel
-  autoCloseMs = 2500,           // success módban auto-close
+  onConfirm,                    // confirm mode
+  onCancel,                     // background click / cancel
+  autoCloseMs = 2500,           // auto-close in success mode
+  showCalendarButton = false,   // NEW: show Google Calendar button or not
+  reservationId = null,         // NEW: created reservation id
 }) {
-  // auto-close csak success módban, korrekt lifecycle-lel
+  // auto-close only in pure success mode (no calendar button)
   useEffect(() => {
     if (type !== "success" || !autoCloseMs) return;
+    if (showCalendarButton) return; // don't auto-close when user might click button
+
     const t = setTimeout(() => onCancel?.(), autoCloseMs);
     return () => clearTimeout(t);
-  }, [type, autoCloseMs, onCancel]);
+  }, [type, autoCloseMs, onCancel, showCalendarButton]);
 
   const isConfirm = type === "confirm";
   const isSuccess = type === "success";
@@ -30,7 +33,7 @@ function ConfirmResponsePopup({
         className="relative w-[600px] max-w-[92vw] rounded-3xl bg-white p-8 shadow-2xl animate-scale-in"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* ikon-rész */}
+        {/* icon */}
         <div className="relative mx-auto mb-6 flex h-24 w-24 items-center justify-center">
           {isSuccess ? (
             <>
@@ -50,7 +53,7 @@ function ConfirmResponsePopup({
               </svg>
             </>
           ) : (
-            // confirm / error ikon
+            // confirm / error icon
             <div
               className={`relative flex h-24 w-24 items-center justify-center rounded-full ${
                 type === "error" ? "bg-red-500" : "bg-dark-green"
@@ -60,7 +63,7 @@ function ConfirmResponsePopup({
                 {type === "error" ? (
                   <path fill="currentColor" d="M11 7h2v6h-2zm0 8h2v2h-2z" />
                 ) : (
-                  // kérdőjel ikon
+                  // question mark icon
                   <path
                     fill="currentColor"
                     d="M11 18h2v-2h-2v2zm1-16C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2m0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8m-1-5h2c0-3 3-3.25 3-5a4 4 0 0 0-8 0h2a2 2 0 1 1 4 0c0 1.5-3 2-3 5z"
@@ -73,10 +76,26 @@ function ConfirmResponsePopup({
 
         <h2 className="text-center text-2xl font-bold text-dark-green animate-slide-up">{title}</h2>
         {description && (
-          <p className="mt-3 text-center text-lg text-dark-green/80 animate-slide-up-delayed">{description}</p>
+          <p className="mt-3 text-center text-lg text-dark-green/80 animate-slide-up-delayed">
+            {description}
+          </p>
         )}
 
-        {/* confirm gombok */}
+        {/* Google Calendar button — only when a reservation exists */}
+        {isSuccess && showCalendarButton && reservationId && (
+          <div className="mt-6 flex justify-center animate-slide-up-delayed">
+            <button
+              className="bg-[#4285F4] text-white px-4 py-2 rounded-lg shadow hover:scale-105 transition"
+              onClick={() => {
+                window.location.href = `http://localhost:5044/api/google/auth?reservationId=${reservationId}`;
+              }}
+            >
+              Add to Google Calendar
+            </button>
+          </div>
+        )}
+
+        {/* confirm buttons */}
         {isConfirm && (
           <div className="mt-8 flex items-center justify-center gap-3">
             <button
@@ -102,7 +121,6 @@ function ConfirmResponsePopup({
         @keyframes checkmark { to { stroke-dashoffset: 0; } }
         @keyframes slide-up { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
-        /* kérdőjel animáció: finom billegés */
         @keyframes question-wiggle {
           0%, 100% { transform: translateY(0) rotate(0deg); }
           25% { transform: translateY(-2px) rotate(-3deg); }
@@ -116,8 +134,6 @@ function ConfirmResponsePopup({
         .animate-checkmark { animation: checkmark 0.6s ease-in-out 0.5s forwards; }
         .animate-slide-up { animation: slide-up 0.5s ease-out 0.8s backwards; }
         .animate-slide-up-delayed { animation: slide-up 0.5s ease-out 1s backwards; }
-
-        /* kérdőjel animáció késleltetéssel indul, csak a szöveg megjelenése után */
         .animate-question-delayed {
           animation: question-wiggle 1.6s ease-in-out 1.2s infinite;
           transform-origin: 50% 55%;
