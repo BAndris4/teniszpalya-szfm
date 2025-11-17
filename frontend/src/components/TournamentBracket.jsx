@@ -101,48 +101,55 @@ export default function TournamentBracket({ tournamentId, onClose }) {
 
   const totalRounds = bracket.rounds.length;
   
-  // For proper two-sided bracket: split the FIRST round matches in half
-  // Left side gets first half, right side gets second half
-  // Finals go in the middle
+  // Split rounds for proper two-sided bracket like FIFA World Cup
   let leftRounds = [];
   let rightRounds = [];
-  let finalRound = null;
+  let middleRounds = [];
 
   if (totalRounds === 1) {
-    // Single match (2 players) - just show finals
-    finalRound = bracket.rounds[0];
+    // Just finals (2 players)
+    middleRounds = [bracket.rounds[0]];
   } else if (totalRounds === 2) {
-    // 4 players: Round 1 (2 matches) split left/right, Round 2 (finals) in middle
+    // 4 players: split first round left/right, finals in middle
     const firstRound = bracket.rounds[0];
     const half = Math.ceil(firstRound.matches.length / 2);
     
     leftRounds = [{
-      round: 1,
+      ...firstRound,
       matches: firstRound.matches.slice(0, half)
     }];
     
     rightRounds = [{
-      round: 1,
+      ...firstRound,
       matches: firstRound.matches.slice(half)
     }];
     
-    finalRound = bracket.rounds[1];
+    middleRounds = [bracket.rounds[1]];
   } else {
-    // More complex brackets: split early rounds
-    const firstRound = bracket.rounds[0];
-    const half = Math.ceil(firstRound.matches.length / 2);
+    // 8+ players: split multiple rounds
+    // Left side: first half of early rounds
+    // Right side: second half of early rounds  
+    // Middle: semi-finals and finals
     
-    leftRounds = [{
-      round: 1,
-      matches: firstRound.matches.slice(0, half)
-    }];
+    const numEarlyRounds = totalRounds - 2; // All except semi and finals
     
-    rightRounds = [{
-      round: 1,
-      matches: firstRound.matches.slice(half)
-    }];
+    for (let i = 0; i < numEarlyRounds; i++) {
+      const round = bracket.rounds[i];
+      const half = Math.ceil(round.matches.length / 2);
+      
+      leftRounds.push({
+        ...round,
+        matches: round.matches.slice(0, half)
+      });
+      
+      rightRounds.push({
+        ...round,
+        matches: round.matches.slice(half)
+      });
+    }
     
-    finalRound = bracket.rounds[bracket.rounds.length - 1];
+    // Semi-finals and finals go in the middle
+    middleRounds = bracket.rounds.slice(numEarlyRounds);
   }
 
   return (
@@ -168,10 +175,10 @@ export default function TournamentBracket({ tournamentId, onClose }) {
 
         {/* Bracket */}
         {totalRounds === 1 ? (
-          // Single final match (2 players)
+          // Just finals
           <div className="flex items-center justify-center py-8">
             <RoundColumn
-              round={finalRound}
+              round={middleRounds[0]}
               roundIndex={0}
               isFinal={true}
               side="final"
@@ -183,60 +190,67 @@ export default function TournamentBracket({ tournamentId, onClose }) {
             />
           </div>
         ) : (
-          // Two-sided bracket (4+ players)
-          <div className="flex items-start justify-between gap-8">
+          // Two-sided bracket
+          <div className="flex items-start justify-center gap-12">
             {/* Left side */}
-            <div className="flex flex-1 gap-4">
-              {leftRounds.map((round, idx) => (
-                <RoundColumn
-                  key={`left-${round.round}`}
-                  round={round}
-                  roundIndex={idx}
-                  totalInSide={leftRounds.length}
-                  side="left"
-                  isAdmin={isAdmin}
-                  savingId={savingId}
-                  onSubmitResult={submitResult}
-                  scores={scores}
-                  setScores={setScores}
-                />
-              ))}
-            </div>
+            {leftRounds.length > 0 && (
+              <div className="flex gap-8">
+                {leftRounds.map((round, idx) => (
+                  <RoundColumn
+                    key={`left-${round.round}`}
+                    round={round}
+                    roundIndex={idx}
+                    totalInSide={leftRounds.length}
+                    side="left"
+                    isAdmin={isAdmin}
+                    savingId={savingId}
+                    onSubmitResult={submitResult}
+                    scores={scores}
+                    setScores={setScores}
+                  />
+                ))}
+              </div>
+            )}
 
-            {/* Finals in the middle */}
-            {finalRound && (
-              <div className="flex items-center">
-                <RoundColumn
-                  round={finalRound}
-                  roundIndex={totalRounds - 1}
-                  isFinal={true}
-                  side="final"
-                  isAdmin={isAdmin}
-                  savingId={savingId}
-                  onSubmitResult={submitResult}
-                  scores={scores}
-                  setScores={setScores}
-                />
+            {/* Middle (semi-finals, finals) */}
+            {middleRounds.length > 0 && (
+              <div className="flex gap-8">
+                {middleRounds.map((round, idx) => (
+                  <RoundColumn
+                    key={`middle-${round.round}`}
+                    round={round}
+                    roundIndex={idx}
+                    isFinal={idx === middleRounds.length - 1}
+                    side="middle"
+                    isAdmin={isAdmin}
+                    savingId={savingId}
+                    onSubmitResult={submitResult}
+                    scores={scores}
+                    setScores={setScores}
+                  />
+                ))}
               </div>
             )}
 
             {/* Right side */}
-            <div className="flex flex-1 flex-row-reverse gap-4">
-              {rightRounds.map((round, idx) => (
-                <RoundColumn
-                  key={`right-${round.round}`}
-                  round={round}
-                  roundIndex={idx}
-                  totalInSide={rightRounds.length}
-                  side="right"
-                  isAdmin={isAdmin}
-                  savingId={savingId}
-                  onSubmitResult={submitResult}
-                  scores={scores}
-                  setScores={setScores}
-                />
-              ))}
-            </div>
+            {rightRounds.length > 0 && (
+              <div className="flex flex-row-reverse gap-8">
+                {rightRounds.map((round, idx) => (
+                  <RoundColumn
+                    key={`right-${round.round}`}
+                    round={round}
+                    roundIndex={idx}
+                    totalInSide={rightRounds.length}
+                    side="right"
+                    isAdmin={isAdmin}
+                    savingId={savingId}
+                    onSubmitResult={submitResult}
+                    scores={scores}
+                    setScores={setScores}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -267,14 +281,21 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
       <div className="flex flex-col gap-6">
         {pairs.map((pair, idx) => (
           <div key={`pair-${idx}`} className="relative flex flex-col gap-6">
-            {/* Vertical connector across the pair */}
-            {side !== "final" && pair.length === 2 && (
-              <div
-                className={
-                  "absolute inset-y-0 w-px bg-gray-300 " +
-                  (side === "left" ? "right-[-16px]" : "left-[-16px]")
-                }
-              />
+            {/* Vertical connector across the pair + horizontal to next round */}
+            {pair.length === 2 && (
+              <>
+                {/* Vertical line connecting the two matches */}
+                <div
+                  className={
+                    "absolute w-[2px] bg-gray-400 " +
+                    (side === "left"
+                      ? "right-[-50px] top-[25%] bottom-[25%]"
+                      : side === "right"
+                      ? "left-[-50px] top-[25%] bottom-[25%]"
+                      : "right-[-50px] top-[25%] bottom-[25%]")
+                  }
+                />
+              </>
             )}
 
             {pair.map((match) => (
@@ -305,17 +326,17 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
 
   return (
     <div className="relative w-52 rounded-lg border-2 border-dark-green-octa bg-white shadow-md">
-      {/* Connector lines */}
+      {/* Connector lines to next round */}
       {side === "left" && (
-        <>
-          {/* Right horizontal connector */}
-          <div className="absolute right-[-16px] top-1/2 h-[1px] w-4 -translate-y-1/2 bg-gray-300" />
-        </>
+        <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
       )}
       {side === "right" && (
+        <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
+      )}
+      {side === "middle" && (
         <>
-          {/* Left horizontal connector */}
-          <div className="absolute left-[-16px] top-1/2 h-[1px] w-4 -translate-y-1/2 bg-gray-300" />
+          <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
+          <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
         </>
       )}
       {/* Player 1 */}
