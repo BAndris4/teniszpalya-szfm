@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 
 // Use the same API base as TournamentsTab
@@ -153,9 +154,13 @@ export default function TournamentBracket({ tournamentId, onClose }) {
     middleRounds = bracket.rounds.slice(numEarlyRounds);
   }
 
+  // Determine current active round (first with any match not completed)
+  const allRounds = [...leftRounds, ...middleRounds, ...rightRounds];
+  const activeRoundIndexGlobal = allRounds.findIndex(r => r.matches.some(m => m.status !== 2));
+
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/50 p-4">
-      <div className="mx-auto max-w-7xl rounded-xl bg-white p-6 shadow-xl">
+      <div className="mx-auto max-w-7xl rounded-xl bg-white p-6 shadow-xl border border-gray-200">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between border-b pb-4">
           <div>
@@ -172,6 +177,27 @@ export default function TournamentBracket({ tournamentId, onClose }) {
           >
             Close
           </button>
+        </div>
+        {/* Round progress badges */}
+        <div className="flex flex-wrap gap-3 mb-8 justify-center">
+          {allRounds.map((r, idx) => {
+            const isActive = idx === activeRoundIndexGlobal && bracket.status === 1;
+            const isDone = r.matches.every(m => m.status === 2);
+            return (
+              <div
+                key={`badge-${idx}`}
+                className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide border transition-colors ${
+                  isActive
+                    ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
+                    : isDone
+                    ? 'bg-green-50 border-green-300 text-green-700'
+                    : 'bg-gray-100 border-gray-300 text-gray-600'
+                }`}
+              >
+                {idx + 1 < allRounds.length ? `Round ${idx + 1}` : 'Final'}
+              </div>
+            );
+          })}
         </div>
 
         {/* Bracket */}
@@ -259,7 +285,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   );
 }
 
-function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive }) {
   const roundNames = ["Round 1", "Round 2", "Semi-Finals", "Finals"];
   const displayName = isFinal
     ? "Finals"
@@ -288,7 +314,7 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 {/* Vertical line connecting the two matches */}
                 <div
                   className={
-                    "absolute w-[2px] bg-gray-400 " +
+                    "absolute w-[2px] bg-gray-300 " +
                     (side === "left"
                       ? "right-[-50px] top-[25%] bottom-[25%]"
                       : side === "right"
@@ -309,6 +335,7 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 onSubmitResult={onSubmitResult}
                 scores={scores}
                 setScores={setScores}
+                isActiveRound={isActive}
               />
             ))}
           </div>
@@ -318,15 +345,30 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
   );
 }
 
-function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores, isActiveRound }) {
   const player1Name = match.player1?.name || "TBD";
   const player2Name = match.player2?.name || "TBD";
   const isCompleted = match.status === 2;
   const winner = match.winner;
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
 
+  // Status color coding
+  const statusBorder = isCompleted
+    ? 'border-green-400'
+    : match.player1 && match.player2
+    ? 'border-yellow-400'
+    : 'border-gray-300';
+
+  const activeGlow = isActiveRound && !isCompleted ? 'shadow-[0_0_0_3px_rgba(59,130,246,0.15)]' : '';
+
   return (
-    <div className="relative w-52 rounded-lg border-2 border-gray-300 bg-white shadow-md">
+    <motion.div
+      className={`relative w-52 rounded-lg border-2 bg-white shadow-sm hover:shadow-md transition-shadow ${statusBorder} ${activeGlow}`}
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ duration: 0.25 }}
+    >
       {/* Connector lines to next round */}
       {side === "left" && (
         <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-400" />
@@ -348,7 +390,12 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
             : ""
         }`}
       >
-        <p className="text-sm text-gray-800">{player1Name}</p>
+        <p className="text-sm text-gray-800 flex items-center gap-1">
+          {isCompleted && winner?.id === match.player1?.id && (
+            <span className="text-yellow-500" title="Winner">🏆</span>
+          )}
+          {player1Name}
+        </p>
       </div>
 
       {/* Player 2 */}
@@ -359,7 +406,12 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
             : ""
         }`}
       >
-        <p className="text-sm text-gray-800">{player2Name}</p>
+        <p className="text-sm text-gray-800 flex items-center gap-1">
+          {isCompleted && winner?.id === match.player2?.id && (
+            <span className="text-yellow-500" title="Winner">🏆</span>
+          )}
+          {player2Name}
+        </p>
       </div>
 
       {/* Score */}
@@ -370,7 +422,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
       )}
 
       {canSet && (
-        <div className="space-y-2 border-t p-2">
+        <div className="space-y-2 border-t p-2 bg-gray-50">
           <input
             type="text"
             placeholder="Score (e.g. 6-4, 6-3)"
@@ -398,6 +450,6 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

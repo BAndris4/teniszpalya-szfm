@@ -129,6 +129,16 @@ function TournamentBracketPage() {
   }
 
   const totalRounds = bracket.rounds?.length || 0;
+  // Determine active round number (first with any incomplete match)
+  const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round;
+  const isCompletedTournament = bracket.status === 2;
+  // Champion (winner of final match if completed)
+  let champion = null;
+  if (isCompletedTournament && bracket.rounds.length > 0) {
+    const finalRound = bracket.rounds[bracket.rounds.length - 1];
+    const decidedFinal = finalRound.matches.find(m => m.winner);
+    champion = decidedFinal?.winner;
+  }
   
   // Split rounds for proper two-sided bracket like FIFA World Cup
   let leftRounds = [];
@@ -246,6 +256,28 @@ function TournamentBracketPage() {
                 </div>
               </motion.div>
 
+              {/* Round progress badges */}
+              <div className="flex flex-wrap gap-3 mb-6 justify-center">
+                {bracket.rounds.map(r => {
+                  const done = r.matches.every(m => m.status === 2);
+                  const active = r.round === activeRoundNumber && !isCompletedTournament;
+                  return (
+                    <div
+                      key={`progress-${r.round}`}
+                      className={`px-4 py-1 rounded-full text-xs font-semibold border tracking-wide transition-colors ${
+                        active
+                          ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
+                          : done
+                          ? 'bg-green/10 border-green/40 text-green-700'
+                          : 'bg-gray-100 border-gray-300 text-gray-600'
+                      }`}
+                    >
+                      {r.round + 1 < totalRounds ? `Round ${r.round + 1}` : 'Final'}
+                    </div>
+                  );
+                })}
+              </div>
+
               {/* Bracket */}
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -284,6 +316,7 @@ function TournamentBracketPage() {
                             onSubmitResult={submitResult}
                             scores={scores}
                             setScores={setScores}
+                            isActive={round.round === activeRoundNumber}
                           />
                         ))}
                       </div>
@@ -304,6 +337,7 @@ function TournamentBracketPage() {
                             onSubmitResult={submitResult}
                             scores={scores}
                             setScores={setScores}
+                            isActive={round.round === activeRoundNumber}
                           />
                         ))}
                       </div>
@@ -324,6 +358,7 @@ function TournamentBracketPage() {
                             onSubmitResult={submitResult}
                             scores={scores}
                             setScores={setScores}
+                            isActive={round.round === activeRoundNumber}
                           />
                         ))}
                       </div>
@@ -331,6 +366,50 @@ function TournamentBracketPage() {
                   </div>
                 )}
               </motion.div>
+
+              {/* Champion section */}
+              {champion && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6 }}
+                  className="mt-10 flex flex-col items-center"
+                >
+                  <div className="relative">
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ duration: 0.5, type: 'spring' }}
+                      className="w-28 h-28 rounded-full bg-gradient-to-br from-green/60 to-green text-white flex items-center justify-center shadow-xl"
+                    >
+                      <span className="text-center font-bold text-lg px-2">{champion.name}</span>
+                    </motion.div>
+                    {/* Confetti */}
+                    {[...Array(18)].map((_, i) => (
+                      <motion.span
+                        key={i}
+                        className="absolute w-2 h-2 rounded-full"
+                        style={{
+                          backgroundColor: ['#16a34a','#059669','#10b981','#34d399','#6ee7b7'][i % 5],
+                          top: '50%',
+                          left: '50%'
+                        }}
+                        initial={{ x: 0, y: 0, opacity: 0 }}
+                        animate={{
+                          x: (Math.random() - 0.5) * 160,
+                          y: (Math.random() - 0.5) * 160,
+                          opacity: 1
+                        }}
+                        transition={{ duration: 1.2, delay: i * 0.05 }}
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-4 flex items-center gap-2 text-lg font-semibold text-dark-green">
+                    <span role="img" aria-label="trophy">🏆</span>
+                    Tournament Champion
+                  </p>
+                </motion.div>
+              )}
             </motion.div>
           </div>
         </div>
@@ -339,7 +418,7 @@ function TournamentBracketPage() {
   );
 }
 
-function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive }) {
   const roundNames = ["Round 1", "Round 2", "Semi-Finals", "Finals"];
   const displayName = isFinal
     ? "Finals"
@@ -374,16 +453,16 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
             {pair.length === 2 && (
               <motion.div
                 className={
-                  "absolute w-[2px] bg-gray-300 " +
+                  "absolute w-[3px] rounded bg-gradient-to-b from-green/70 to-green/30 " +
                   (side === "left"
-                    ? "right-[-50px] top-[25%] bottom-[25%]"
+                    ? "right-[-55px] top-[25%] bottom-[25%]"
                     : side === "right"
-                    ? "left-[-50px] top-[25%] bottom-[25%]"
-                    : "right-[-50px] top-[25%] bottom-[25%]")
+                    ? "left-[-55px] top-[25%] bottom-[25%]"
+                    : "right-[-55px] top-[25%] bottom-[25%]")
                 }
                 initial={{ scaleY: 0 }}
                 animate={{ scaleY: 1 }}
-                transition={{ duration: 0.5, delay: idx * 0.1 }}
+                transition={{ duration: 0.6, delay: idx * 0.12 }}
               />
             )}
 
@@ -397,6 +476,7 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 onSubmitResult={onSubmitResult}
                 scores={scores}
                 setScores={setScores}
+                isActiveRound={isActive}
               />
             ))}
           </div>
