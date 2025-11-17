@@ -251,7 +251,7 @@ function Tournaments() {
                         <div className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-transform hover:scale-105 ${
                           isTournamentFull(t) 
                             ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
-                            : 'bg-gradient-to-r from-green to-dark-green text-white'
+                            : 'bg-green text-white'
                         }`}>
                           {t.currentParticipants}/{t.maxParticipants}
                         </div>
@@ -281,7 +281,7 @@ function Tournaments() {
                         </div>
                       </div>
 
-                      <div className="flex justify-end items-center gap-2 text-green font-medium text-sm group-hover:text-dark-green transition-colors">
+                      <div className="flex justify-end items-center gap-2 text-green font-medium text-sm group-hover:text-green transition-colors">
                         View Details
                         <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -395,7 +395,7 @@ function Tournaments() {
                     whileTap={{ scale: 0.98 }}
                     type="submit" 
                     disabled={creating} 
-                    className="mt-3 px-8 py-4 bg-gradient-to-r from-dark-green to-green text-white text-lg font-bold rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
+                    className="mt-3 px-8 py-4 bg-green hover:bg-green/90 text-white text-lg font-bold rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
                   >
                     {creating ? (
                       <>
