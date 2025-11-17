@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Teniszpalya.API.Data;
 using Teniszpalya.API.Models;
+using Teniszpalya.API.Services;
 
 namespace Teniszpalya.API;
 
@@ -32,6 +33,9 @@ public class Program
         builder.Services.AddDbContext<AppDBContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
         builder.Services.AddControllers();
+        
+        // Register services
+        builder.Services.AddScoped<BracketService>();
 
 #pragma warning disable CS8604 // Possible null reference argument.
         var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
