@@ -238,7 +238,7 @@ function TournamentDetails() {
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center">
                 <p className="text-2xl text-dark-green-half">Tournament not found</p>
-                <button onClick={() => navigate('/tournaments')} className="mt-4 px-6 py-3 bg-green text-white rounded-xl">
+                <button onClick={() => navigate('/tournaments')} className="mt-4 px-6 py-3 bg-green text-white rounded-xl cursor-pointer">
                   Back to Tournaments
                 </button>
               </div>
@@ -285,7 +285,7 @@ function TournamentDetails() {
                   onClick={() => navigate('/tournaments')}
                   whileHover={{ scale: 1.05, x: -5, transition: { duration: 0.15 } }}
                   whileTap={{ scale: 0.95 }}
-                  className="flex items-center gap-2 px-5 py-3 bg-white/80 backdrop-blur-sm rounded-2xl text-dark-green hover:text-white hover:bg-green transition-all duration-150 font-semibold shadow-lg hover:shadow-xl group"
+                  className="flex items-center gap-2 px-5 py-3 bg-white/80 backdrop-blur-sm rounded-2xl text-dark-green hover:text-white hover:bg-green transition-all duration-150 font-semibold shadow-lg hover:shadow-xl group cursor-pointer"
                 >
                   <svg className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-150" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
@@ -300,7 +300,7 @@ function TournamentDetails() {
                       whileHover={{ scale: 1.05, transition: { duration: 0.15 } }}
                       whileTap={{ scale: 0.95 }}
                       onClick={handleEdit}
-                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-150 font-medium"
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-150 font-medium cursor-pointer"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
@@ -313,7 +313,7 @@ function TournamentDetails() {
                       whileTap={{ scale: 0.95 }}
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all duration-150 font-medium disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                     {deleting ? (
                       <>
@@ -457,7 +457,7 @@ function TournamentDetails() {
                           type="submit"
                           whileHover={{ scale: 1.01, transition: { duration: 0.1 } }}
                           whileTap={{ scale: 0.99 }}
-                          className="flex-1 px-6 py-3 rounded-xl bg-green hover:bg-green/90 text-white hover:shadow-xl transition-all duration-100 font-bold text-lg flex items-center justify-center gap-2"
+                          className="flex-1 px-6 py-3 rounded-xl bg-green hover:bg-green/90 text-white hover:shadow-xl transition-all duration-100 font-bold text-lg flex items-center justify-center gap-2 cursor-pointer"
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -469,7 +469,7 @@ function TournamentDetails() {
                           onClick={handleCancelEdit}
                           whileHover={{ scale: 1.01, transition: { duration: 0.1 } }}
                           whileTap={{ scale: 0.99 }}
-                          className="px-6 py-3 rounded-xl bg-gray-200 text-dark-green hover:bg-gray-300 transition-all duration-100 font-bold text-lg"
+                          className="px-6 py-3 rounded-xl bg-gray-200 text-dark-green hover:bg-gray-300 transition-all duration-100 font-bold text-lg cursor-pointer"
                         >
                           Cancel
                         </motion.button>
@@ -570,7 +570,7 @@ function TournamentDetails() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleUnregister}
-                        className="w-full px-6 py-4 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all font-bold text-lg flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 rounded-xl bg-orange-500 text-white hover:bg-orange-600 transition-all font-bold text-lg flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -582,7 +582,7 @@ function TournamentDetails() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={handleRegister} 
-                        className="w-full px-6 py-4 rounded-xl bg-green hover:bg-green/90 text-white hover:shadow-2xl transition-all font-bold text-lg flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 rounded-xl bg-green hover:bg-green/90 text-white hover:shadow-2xl transition-all font-bold text-lg flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M8 9a3 3 0 100-6 3 3 0 000 6zM8 11a6 6 0 016 6H2a6 6 0 016-6zM16 7a1 1 0 10-2 0v1h-1a1 1 0 100 2h1v1a1 1 0 102 0v-1h1a1 1 0 100-2h-1V7z" />
@@ -594,7 +594,7 @@ function TournamentDetails() {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => navigate('/login')} 
-                        className="w-full px-6 py-4 rounded-xl bg-white border-2 border-green text-green hover:bg-green hover:text-white transition-all font-bold text-lg flex items-center justify-center gap-2"
+                        className="w-full px-6 py-4 rounded-xl bg-white border-2 border-green text-green hover:bg-green hover:text-white transition-all font-bold text-lg flex items-center justify-center gap-2 cursor-pointer"
                       >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd" />
