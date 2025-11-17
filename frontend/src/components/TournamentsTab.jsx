@@ -382,13 +382,9 @@ export default function TournamentsTab() {
         const data = await listRes.json();
         setTournaments(Array.isArray(data) ? data : []);
       }
-      
-      setPopupConfig({
-        type: "success",
-        title: "Tournament Started",
-        description: "The bracket has been generated successfully!",
-        confirmText: "OK",
-      });
+
+      // Open bracket immediately for the started tournament
+      setViewBracketId(t.id);
     } catch (e) {
       setPopupConfig({
         type: "success",
@@ -776,7 +772,29 @@ export default function TournamentsTab() {
                             onClick={() => handleRowClick(t)}
                           >
                             <Td>{idx + 1}</Td>
-                            <Td>{t.title || `Tournament ${t.id}`}</Td>
+                            <Td>
+                              <div className="flex items-center gap-2">
+                                <span>{t.title || `Tournament ${t.id}`}</span>
+                                {typeof t.status === "number" && (
+                                  <span
+                                    className={
+                                      "rounded-full px-2 py-0.5 text-[10px] font-semibold " +
+                                      (t.status === 0
+                                        ? "bg-yellow-100 text-yellow-700"
+                                        : t.status === 1
+                                        ? "bg-blue-100 text-blue-700"
+                                        : "bg-green-100 text-green-700")
+                                    }
+                                  >
+                                    {t.status === 0
+                                      ? "Upcoming"
+                                      : t.status === 1
+                                      ? "In Progress"
+                                      : "Completed"}
+                                  </span>
+                                )}
+                              </div>
+                            </Td>
                             <Td>
                               {t.startDate
                                 ? fmtDateTime(
