@@ -395,7 +395,7 @@ function Tournaments() {
                     whileTap={{ scale: 0.98 }}
                     type="submit" 
                     disabled={creating} 
-                    className="mt-3 px-8 py-4 bg-green hover:bg-green/90 text-white text-lg font-bold rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
+                    className="mt-3 px-8 py-4 bg-green hover:bg-green/90 text-white text-lg font-bold rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3 cursor-pointer"
                   >
                     {creating ? (
                       <>
