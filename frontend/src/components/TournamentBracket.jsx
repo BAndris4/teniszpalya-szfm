@@ -100,11 +100,50 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   }
 
   const totalRounds = bracket.rounds.length;
-  const isFinal = totalRounds === 1;
+  
+  // For proper two-sided bracket: split the FIRST round matches in half
+  // Left side gets first half, right side gets second half
+  // Finals go in the middle
+  let leftRounds = [];
+  let rightRounds = [];
+  let finalRound = null;
 
-  // Split rounds for two-sided bracket (left side plays toward right, right side plays toward left)
-  const leftRounds = bracket.rounds.slice(0, Math.ceil(totalRounds / 2));
-  const rightRounds = bracket.rounds.slice(Math.ceil(totalRounds / 2)).reverse();
+  if (totalRounds === 1) {
+    // Single match (2 players) - just show finals
+    finalRound = bracket.rounds[0];
+  } else if (totalRounds === 2) {
+    // 4 players: Round 1 (2 matches) split left/right, Round 2 (finals) in middle
+    const firstRound = bracket.rounds[0];
+    const half = Math.ceil(firstRound.matches.length / 2);
+    
+    leftRounds = [{
+      round: 1,
+      matches: firstRound.matches.slice(0, half)
+    }];
+    
+    rightRounds = [{
+      round: 1,
+      matches: firstRound.matches.slice(half)
+    }];
+    
+    finalRound = bracket.rounds[1];
+  } else {
+    // More complex brackets: split early rounds
+    const firstRound = bracket.rounds[0];
+    const half = Math.ceil(firstRound.matches.length / 2);
+    
+    leftRounds = [{
+      round: 1,
+      matches: firstRound.matches.slice(0, half)
+    }];
+    
+    rightRounds = [{
+      round: 1,
+      matches: firstRound.matches.slice(half)
+    }];
+    
+    finalRound = bracket.rounds[bracket.rounds.length - 1];
+  }
 
   return (
     <div className="fixed inset-0 z-50 overflow-auto bg-black/50 p-4">
@@ -128,11 +167,11 @@ export default function TournamentBracket({ tournamentId, onClose }) {
         </div>
 
         {/* Bracket */}
-        {isFinal ? (
-          // Single final match
+        {totalRounds === 1 ? (
+          // Single final match (2 players)
           <div className="flex items-center justify-center py-8">
             <RoundColumn
-              round={bracket.rounds[0]}
+              round={finalRound}
               roundIndex={0}
               isFinal={true}
               side="final"
@@ -144,7 +183,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
             />
           </div>
         ) : (
-          // Two-sided bracket
+          // Two-sided bracket (4+ players)
           <div className="flex items-start justify-between gap-8">
             {/* Left side */}
             <div className="flex flex-1 gap-4">
@@ -165,13 +204,13 @@ export default function TournamentBracket({ tournamentId, onClose }) {
             </div>
 
             {/* Finals in the middle */}
-            {totalRounds > 1 && (
+            {finalRound && (
               <div className="flex items-center">
                 <RoundColumn
-                  round={bracket.rounds[bracket.rounds.length - 1]}
+                  round={finalRound}
                   roundIndex={totalRounds - 1}
                   isFinal={true}
-                    side="final"
+                  side="final"
                   isAdmin={isAdmin}
                   savingId={savingId}
                   onSubmitResult={submitResult}
