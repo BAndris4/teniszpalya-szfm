@@ -110,27 +110,34 @@ public class Program
         // Seed Users
         if (!context.Users.Any())
         {
-            var adminUser = new User
+            var users = new List<User>
             {
-                FirstName = "admin",
-                LastName = "User",
-                Email = "admin@test.com",
-                PhoneNumber = "+36301234567",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"),
-                RoleID = 2 // Admin role
+                new User
+                {
+                    FirstName = "Admin",
+                    LastName = "User",
+                    Email = "admin@admin.com",
+                    PhoneNumber = "+36301234567",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+                    RoleID = 2 // Admin role
+                }
             };
 
-            var regularUser = new User
+            // Add test users
+            for (int i = 1; i <= 10; i++)
             {
-                FirstName = "Test",
-                LastName = "User",
-                Email = "test@test.com",
-                PhoneNumber = "+36307654321",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("test123"),
-                RoleID = 1 // Regular user role
-            };
+                users.Add(new User
+                {
+                    FirstName = $"User{i}",
+                    LastName = $"Test{i}",
+                    Email = $"user{i}@example.com",
+                    PhoneNumber = $"+36301234{i:D3}",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword($"user{i}"),
+                    RoleID = 1 // Regular user role
+                });
+            }
 
-            context.Users.AddRange(adminUser, regularUser);
+            context.Users.AddRange(users);
             context.SaveChanges();
         }
 

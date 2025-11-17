@@ -35,6 +35,9 @@ export default function TournamentsTab() {
   const [editForm, setEditForm] = useState(emptyForm);
   const [editSaving, setEditSaving] = useState(false);
   const [deleteBusyId, setDeleteBusyId] = useState(null);
+  
+  // --- start tournament ---
+  const [startingId, setStartingId] = useState(null);
 
   // --- popup (confirm / success) ---
   const [popupConfig, setPopupConfig] = useState(null);
@@ -332,6 +335,65 @@ export default function TournamentsTab() {
       setError(e?.message || "Delete failed");
     } finally {
       setDeleteBusyId(null);
+    }
+  }
+
+  // Start Tournament
+  async function handleStartTournament(t) {
+    if (t.currentParticipants < 2) {
+      setPopupConfig({
+        type: "success",
+        title: "Cannot start",
+        description: "At least 2 participants are required to start the tournament.",
+        confirmText: "OK",
+      });
+      return;
+    }
+
+    setPopupConfig({
+      type: "confirm",
+      title: "Start Tournament",
+      description: `Start "${t.title || "this tournament"}"? This will generate the bracket and lock registrations.`,
+      confirmText: "Start",
+      cancelText: "Cancel",
+      onConfirm: () => actuallyStartTournament(t),
+    });
+  }
+
+  async function actuallyStartTournament(t) {
+    setStartingId(t.id);
+    try {
+      const res = await fetch(`${API_BASE}/${t.id}/start`, {
+        method: "POST",
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || `Start failed ${res.status}`);
+      }
+      
+      // Reload tournaments
+      const listRes = await fetch(API_BASE, { credentials: "include" });
+      if (listRes.ok) {
+        const data = await listRes.json();
+        setTournaments(Array.isArray(data) ? data : []);
+      }
+      
+      setPopupConfig({
+        type: "success",
+        title: "Tournament Started",
+        description: "The bracket has been generated successfully!",
+        confirmText: "OK",
+      });
+    } catch (e) {
+      setPopupConfig({
+        type: "success",
+        title: "Error",
+        description: e?.message || "Failed to start tournament",
+        confirmText: "OK",
+      });
+    } finally {
+      setStartingId(null);
     }
   }
 
@@ -699,6 +761,9 @@ export default function TournamentsTab() {
                       const participantsInfo =
                         participantsByTournament[t.id] || {};
                       const isExpanded = expandedId === t.id;
+                      
+                      // DEBUG
+                      console.log(`Tournament ${t.id}: status=${t.status}, current=${current}`);
 
                       return (
                         <>
@@ -727,6 +792,25 @@ export default function TournamentsTab() {
                             </Td>
                             <Td>
                               <div className="flex gap-2">
+                                {/* Start button - csak Upcoming és >= 2 participant */}
+                                {t.status === 0 && current >= 2 && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleStartTournament(t);
+                                    }}
+                                    className="cursor-pointer rounded-lg border border-green-600 px-3 py-1 text-xs font-semibold text-green-700 hover:bg-green-50 disabled:opacity-50"
+                                    disabled={
+                                      startingId === t.id ||
+                                      deleteBusyId === t.id
+                                    }
+                                  >
+                                    {startingId === t.id
+                                      ? "Starting..."
+                                      : "Start"}
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={(e) => {

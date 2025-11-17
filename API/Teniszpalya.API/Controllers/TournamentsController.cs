@@ -35,6 +35,7 @@ namespace Teniszpalya.API.Controllers
                 t.Location,
                 t.MaxParticipants,
                 t.Fee,
+                t.Status,
                 CurrentParticipants = registrations.Count(r => r.TournamentID == t.ID),
                 RegisteredUserIds = registrations.Where(r => r.TournamentID == t.ID).Select(r => r.UserID).ToList()
             });
