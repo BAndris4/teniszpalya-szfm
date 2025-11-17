@@ -135,6 +135,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
               round={bracket.rounds[0]}
               roundIndex={0}
               isFinal={true}
+              side="final"
               isAdmin={isAdmin}
               savingId={savingId}
               onSubmitResult={submitResult}
@@ -153,6 +154,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={round}
                   roundIndex={idx}
                   totalInSide={leftRounds.length}
+                  side="left"
                   isAdmin={isAdmin}
                   savingId={savingId}
                   onSubmitResult={submitResult}
@@ -169,6 +171,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={bracket.rounds[bracket.rounds.length - 1]}
                   roundIndex={totalRounds - 1}
                   isFinal={true}
+                    side="final"
                   isAdmin={isAdmin}
                   savingId={savingId}
                   onSubmitResult={submitResult}
@@ -186,6 +189,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
                   round={round}
                   roundIndex={idx}
                   totalInSide={rightRounds.length}
+                  side="right"
                   isAdmin={isAdmin}
                   savingId={savingId}
                   onSubmitResult={submitResult}
@@ -201,7 +205,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   );
 }
 
-function RoundColumn({ round, roundIndex, isFinal, totalInSide, isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores }) {
   const roundNames = ["Round 1", "Round 2", "Semi-Finals", "Finals"];
   const displayName = isFinal
     ? "Finals"
@@ -215,11 +219,12 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, isAdmin, savingI
       <h3 className="mb-3 text-center text-sm font-semibold text-dark-green">
         {displayName}
       </h3>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {round.matches.map((match) => (
           <MatchCard
             key={match.id}
             match={match}
+            side={side}
             isAdmin={isAdmin}
             savingId={savingId}
             onSubmitResult={onSubmitResult}
@@ -232,7 +237,7 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, isAdmin, savingI
   );
 }
 
-function MatchCard({ match, isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores }) {
   const player1Name = match.player1?.name || "TBD";
   const player2Name = match.player2?.name || "TBD";
   const isCompleted = match.status === 2;
@@ -240,7 +245,20 @@ function MatchCard({ match, isAdmin, savingId, onSubmitResult, scores, setScores
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
 
   return (
-    <div className="w-48 rounded-lg border-2 border-dark-green-octa bg-white shadow-md">
+    <div className="relative w-52 rounded-lg border-2 border-dark-green-octa bg-white shadow-md">
+      {/* Connector lines */}
+      {side === "left" && (
+        <>
+          {/* Right horizontal connector */}
+          <div className="absolute right-[-16px] top-1/2 h-[1px] w-4 -translate-y-1/2 bg-gray-300" />
+        </>
+      )}
+      {side === "right" && (
+        <>
+          {/* Left horizontal connector */}
+          <div className="absolute left-[-16px] top-1/2 h-[1px] w-4 -translate-y-1/2 bg-gray-300" />
+        </>
+      )}
       {/* Player 1 */}
       <div
         className={`border-b px-3 py-2 ${
