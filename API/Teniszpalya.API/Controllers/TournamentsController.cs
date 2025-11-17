@@ -248,5 +248,71 @@ namespace Teniszpalya.API.Controllers
 
             return Ok(new { message = "Tournament started successfully", matchCount = matches.Count });
         }
+
+        [HttpGet("{id}/bracket")]
+        public async Task<IActionResult> GetBracket(int id)
+        {
+            var tournament = await _context.Tournaments.FindAsync(id);
+            if (tournament == null)
+                return NotFound(new { message = "Tournament not found" });
+
+            if (tournament.Status == TournamentStatus.Upcoming)
+                return BadRequest(new { message = "Tournament has not started yet" });
+
+            // Get all matches for this tournament
+            var matches = await _context.Matches
+                .Where(m => m.TournamentID == id)
+                .OrderBy(m => m.Round)
+                .ThenBy(m => m.MatchNumber)
+                .ToListAsync();
+
+            // Get all participants
+            var playerIds = matches
+                .SelectMany(m => new[] { m.Player1ID, m.Player2ID, m.WinnerID })
+                .Where(pid => pid.HasValue)
+                .Select(pid => pid!.Value)
+                .Distinct()
+                .ToList();
+
+            var users = await _context.Users
+                .Where(u => playerIds.Contains(u.ID))
+                .Select(u => new { u.ID, u.FirstName, u.LastName, u.Email })
+                .ToListAsync();
+
+            var userDict = users.ToDictionary(u => u.ID);
+
+            // Group matches by round
+            var rounds = matches
+                .GroupBy(m => m.Round)
+                .OrderBy(g => g.Key)
+                .Select(g => new
+                {
+                    round = g.Key,
+                    matches = g.Select(m => new
+                    {
+                        id = m.ID,
+                        matchNumber = m.MatchNumber,
+                        player1 = m.Player1ID.HasValue && userDict.ContainsKey(m.Player1ID.Value)
+                            ? new { id = m.Player1ID.Value, name = $"{userDict[m.Player1ID.Value].FirstName} {userDict[m.Player1ID.Value].LastName}" }
+                            : null,
+                        player2 = m.Player2ID.HasValue && userDict.ContainsKey(m.Player2ID.Value)
+                            ? new { id = m.Player2ID.Value, name = $"{userDict[m.Player2ID.Value].FirstName} {userDict[m.Player2ID.Value].LastName}" }
+                            : null,
+                        winner = m.WinnerID.HasValue && userDict.ContainsKey(m.WinnerID.Value)
+                            ? new { id = m.WinnerID.Value, name = $"{userDict[m.WinnerID.Value].FirstName} {userDict[m.WinnerID.Value].LastName}" }
+                            : null,
+                        score = m.Score,
+                        status = m.Status
+                    }).ToList()
+                }).ToList();
+
+            return Ok(new
+            {
+                tournamentId = id,
+                tournamentTitle = tournament.Title,
+                status = tournament.Status,
+                rounds
+            });
+        }
     }
 }
