@@ -17,6 +17,7 @@ namespace Teniszpalya.API.Data
         public DbSet<Reservation> Reservations { get; set; }
         public DbSet<Tournament> Tournaments { get; set; }
         public DbSet<TournamentRegistration> TournamentRegistrations { get; set; }
+        public DbSet<Match> Matches { get; set; }
         public DbSet<Coupon> Coupons { get; set; }
     }
 }
