@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Teniszpalya.API.Data;
 using Teniszpalya.API.Models;
+using Teniszpalya.API.Services;
 
 namespace Teniszpalya.API.Controllers
 {
@@ -12,10 +13,12 @@ namespace Teniszpalya.API.Controllers
     public class TournamentsController : ControllerBase
     {
         private readonly AppDBContext _context;
+        private readonly BracketService _bracketService;
 
-        public TournamentsController(AppDBContext context)
+        public TournamentsController(AppDBContext context, BracketService bracketService)
         {
             _context = context;
+            _bracketService = bracketService;
         }
 
         [HttpGet]
@@ -203,6 +206,47 @@ namespace Teniszpalya.API.Controllers
             await _context.SaveChangesAsync();
             
             return Ok(new { message = "Tournament deleted successfully" });
+        }
+
+        [Authorize]
+        [HttpPost("{id}/start")]
+        public async Task<IActionResult> StartTournament(int id)
+        {
+            // Only admins can start tournaments
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (roleClaim == null || !int.TryParse(roleClaim, out var roleId) || roleId != (int)Role.ADMIN)
+            {
+                return Forbid();
+            }
+
+            var tournament = await _context.Tournaments.FindAsync(id);
+            if (tournament == null) 
+                return NotFound(new { message = "Tournament not found" });
+
+            if (tournament.Status != TournamentStatus.Upcoming)
+                return BadRequest(new { message = "Tournament has already started or completed" });
+
+            // Get registered participants
+            var registrations = await _context.TournamentRegistrations
+                .Where(r => r.TournamentID == id)
+                .ToListAsync();
+
+            if (registrations.Count < 2)
+                return BadRequest(new { message = "At least 2 participants required to start tournament" });
+
+            // Generate bracket
+            var participantIds = registrations.Select(r => r.UserID).ToList();
+            var matches = _bracketService.GenerateBracket(id, participantIds);
+
+            // Save matches to database
+            await _context.Matches.AddRangeAsync(matches);
+
+            // Update tournament status
+            tournament.Status = TournamentStatus.InProgress;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Tournament started successfully", matchCount = matches.Count });
         }
     }
 }

@@ -34,7 +34,7 @@ namespace Teniszpalya.API.Services
                     Player1ID = participants[i],
                     Player2ID = participants[i + 1],
                     Status = MatchStatus.Pending,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
                 
                 // Auto-advance if one player is BYE
@@ -71,7 +71,7 @@ namespace Teniszpalya.API.Services
                         Player1ID = null,
                         Player2ID = null,
                         Status = MatchStatus.Pending,
-                        CreatedAt = DateTime.UtcNow
+                        CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                     });
                 }
                 
