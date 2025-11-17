@@ -75,6 +75,15 @@ public class Program
         using (var scope = app.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<AppDBContext>();
+            // Apply pending migrations automatically on startup so a new database is generated if missing
+            try
+            {
+                context.Database.Migrate();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Migration Error] {ex.Message}\n{ex.StackTrace}");
+            }
             SeedDatabase(context);
         }
 
@@ -90,6 +99,7 @@ public class Program
 
         app.UseHttpsRedirection();
         app.UseCors("AllowReactApp");
+        app.UseAuthentication();
         app.UseAuthorization();
         app.MapControllers();
         app.Run();
