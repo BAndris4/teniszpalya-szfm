@@ -314,5 +314,76 @@ namespace Teniszpalya.API.Controllers
                 rounds
             });
         }
+
+        [Authorize]
+        [HttpPost("{tournamentId}/matches/{matchId}/result")]
+        public async Task<IActionResult> SetMatchResult(int tournamentId, int matchId, [FromBody] MatchResultRequest request)
+        {
+            // Only admins can set match results
+            var roleClaim = User.FindFirst(ClaimTypes.Role)?.Value;
+            if (roleClaim == null || !int.TryParse(roleClaim, out var roleId) || roleId != (int)Role.ADMIN)
+            {
+                return Forbid();
+            }
+
+            var match = await _context.Matches
+                .FirstOrDefaultAsync(m => m.ID == matchId && m.TournamentID == tournamentId);
+
+            if (match == null)
+                return NotFound(new { message = "Match not found" });
+
+            if (match.Status == MatchStatus.Completed)
+                return BadRequest(new { message = "Match already completed" });
+
+            // Validate winner is one of the players
+            if (request.WinnerId != match.Player1ID && request.WinnerId != match.Player2ID)
+                return BadRequest(new { message = "Winner must be one of the match participants" });
+
+            // Update match
+            match.WinnerID = request.WinnerId;
+            match.Score = request.Score;
+            match.Status = MatchStatus.Completed;
+
+            // Advance winner to next round
+            var nextRound = match.Round + 1;
+            var nextMatchNumber = (match.MatchNumber + 1) / 2; // Pairing logic
+
+            var nextMatch = await _context.Matches
+                .FirstOrDefaultAsync(m => m.TournamentID == tournamentId 
+                    && m.Round == nextRound 
+                    && m.MatchNumber == nextMatchNumber);
+
+            if (nextMatch != null)
+            {
+                // Determine if winner goes to player1 or player2 slot
+                if (match.MatchNumber % 2 == 1) // Odd match number -> player1
+                {
+                    nextMatch.Player1ID = request.WinnerId;
+                }
+                else // Even match number -> player2
+                {
+                    nextMatch.Player2ID = request.WinnerId;
+                }
+            }
+            else
+            {
+                // This was the final match, tournament is complete
+                var tournament = await _context.Tournaments.FindAsync(tournamentId);
+                if (tournament != null)
+                {
+                    tournament.Status = TournamentStatus.Completed;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Match result saved successfully" });
+        }
     }
+}
+
+public class MatchResultRequest
+{
+    public required int WinnerId { get; set; }
+    public string? Score { get; set; }
 }
