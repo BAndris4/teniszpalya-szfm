@@ -306,12 +306,45 @@ namespace Teniszpalya.API.Controllers
                     }).ToList()
                 }).ToList();
 
+            // Create 3rd place match from semi-final losers
+            object? thirdPlaceMatch = null;
+            if (rounds.Count >= 2 && tournament.Status == TournamentStatus.Completed)
+            {
+                var semiFinalRound = rounds[rounds.Count - 2];
+                var semiFinalMatches = semiFinalRound.matches
+                    .Where(m => m.status == MatchStatus.Completed && m.winner != null)
+                    .ToList();
+
+                if (semiFinalMatches.Count >= 2)
+                {
+                    var losers = semiFinalMatches
+                        .Select(m => m.player1?.id == m.winner?.id ? m.player2 : m.player1)
+                        .Where(p => p != null)
+                        .ToList();
+
+                    if (losers.Count == 2)
+                    {
+                        thirdPlaceMatch = new
+                        {
+                            id = "third-place",
+                            matchNumber = 999,
+                            player1 = losers[0],
+                            player2 = losers[1],
+                            winner = (object?)null,
+                            score = (string?)null,
+                            status = MatchStatus.Pending
+                        };
+                    }
+                }
+            }
+
             return Ok(new
             {
                 tournamentId = id,
                 tournamentTitle = tournament.Title,
                 status = tournament.Status,
-                rounds
+                rounds,
+                thirdPlaceMatch
             });
         }
 
