@@ -19,36 +19,57 @@ export default function AdminBracketEmbedded({ tournamentId, onClose }) {
     if (!tournamentId) return;
     loadBracket();
   }, [tournamentId]);
-
-  async function loadBracket() {
-    try {
-      setLoading(true);
-      setError(null);
-      const res = await fetch(`${API_BASE}/${tournamentId}/bracket`, { credentials: "include" });
-      if (!res.ok) throw new Error(`Failed to load bracket: ${res.status}`);
-      const data = await res.json();
-      setBracket(data);
-    } catch (e) {
-      setError(e?.message || "Failed to load bracket");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const isAdmin = user?.roleID === 2;
-
-  async function submitResult(match, winnerId) {
-    try {
-      setSavingId(match.id);
-      const res = await fetch(`${API_BASE}/${tournamentId}/matches/${match.id}/result`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ winnerId, score: scores[match.id] || null })
-      });
-      if (!res.ok) throw new Error(`Failed to save result: ${res.status}`);
-      await loadBracket();
-    } catch (e) {
+        <div className="flex items-start overflow-x-auto pb-4 w-full">
+          {bracket.rounds.length === 1 ? (
+            <div className="flex justify-center w-full">
+              <RoundColumn
+                round={bracket.rounds[0]}
+                roundIndex={0}
+                isFinal={true}
+                side="final"
+                isAdmin={isAdmin}
+                savingId={savingId}
+                onSubmitResult={submitResult}
+                scores={scores}
+                setScores={setScores}
+                isActive={bracket.rounds[0].round === activeRoundNumber}
+                marginTop={roundMarginTop[0]}
+                gapBetweenMatches={roundGapBetween[0]}
+                matchHeight={cardHeight}
+                firstRoundMatches={firstRoundMatches}
+              />
+            </div>
+          ) : (
+            bracket.rounds.map((round, idx) => {
+              const isLastBeforeFinal = idx === bracket.rounds.length - 2;
+              const isFinalRound = idx === bracket.rounds.length - 1;
+              let marginRight = '48px';
+              if (idx === 0 || idx === 1) marginRight = '96px';
+              if (isLastBeforeFinal) marginRight = '96px';
+              if (isFinalRound) marginRight = '46.5px';
+              return (
+                <div key={`round-wrapper-${round.round}`} style={{ marginRight }}>
+                  <RoundColumn
+                    key={`round-${round.round}`}
+                    round={round}
+                    roundIndex={idx}
+                    isFinal={isFinalRound}
+                    side="left"
+                    isAdmin={isAdmin}
+                    savingId={savingId}
+                    onSubmitResult={submitResult}
+                    scores={scores}
+                    setScores={setScores}
+                    isActive={round.round === activeRoundNumber}
+                    marginTop={roundMarginTop[idx]}
+                    gapBetweenMatches={roundGapBetween[idx]}
+                    matchHeight={cardHeight}
+                    firstRoundMatches={firstRoundMatches}
+                  />
+                </div>
+              );
+            })
+          )}
       setError(e?.message || "Failed to save result");
     } finally {
       setSavingId(null);
