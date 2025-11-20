@@ -4,6 +4,7 @@ import { useCurrentUser } from "../hooks/useCurrentUser";
 import { fmtDateTime } from "../utils/dates";
 import ConfirmResponsePopup from "../components/ConfirmResponsePopup";
 import TournamentBracket from "../components/TournamentBracket";
+import AdminBracketEmbedded from "../components/AdminBracketEmbedded";
 
 const API_BASE = "http://localhost:5044/api/tournaments";
 
@@ -1009,9 +1010,9 @@ export default function TournamentsTab() {
         />
       )}
       
-      {/* Bracket Modal */}
+      {/* Embedded Bracket (replaces old modal) */}
       {viewBracketId && (
-        <TournamentBracket
+        <AdminBracketEmbedded
           tournamentId={viewBracketId}
           onClose={() => setViewBracketId(null)}
         />
