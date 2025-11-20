@@ -105,6 +105,46 @@ function TournamentBracketPage() {
   const thirdPlaceMatch = bracket.thirdPlaceMatch;
   const champion = bracket.champion;
 
+  // Dynamic vertical positioning for any participant count (supports 8,16,... powers of 2)
+  const cardHeight = 96;
+  const baseGap = 32;
+  const firstRoundMatches = bracket.rounds[0]?.matches.length || 0; // e.g. 4 (8 players) or 8 (16 players)
+
+  // Precompute top positions per round
+  const roundTopPositions = [];
+  const roundMarginTop = [];
+  const roundGapBetween = [];
+
+  if (firstRoundMatches > 0) {
+    // Round 0 top positions
+    const tops0 = Array.from({ length: firstRoundMatches }, (_, i) => i * (cardHeight + baseGap));
+    roundTopPositions.push(tops0);
+    roundMarginTop.push(0);
+    // gapBetween for round 0 used only to compute connector height (cardHeight + gapBetween)
+    roundGapBetween.push(baseGap);
+  }
+
+  for (let r = 1; r < bracket.rounds.length; r++) {
+    const prevTops = roundTopPositions[r - 1];
+    const prevCenters = prevTops.map(t => t + cardHeight / 2);
+    const matchCount = bracket.rounds[r].matches.length;
+    const tops = [];
+    for (let i = 0; i < matchCount; i++) {
+      const c1 = prevCenters[i * 2];
+      const c2 = prevCenters[i * 2 + 1];
+      const center = (c1 + c2) / 2;
+      tops.push(center - cardHeight / 2);
+    }
+    roundTopPositions.push(tops);
+    roundMarginTop.push(tops[0]);
+    if (matchCount > 1) {
+      const gap = tops[1] - (tops[0] + cardHeight); // distance between match boxes
+      roundGapBetween.push(gap);
+    } else {
+      roundGapBetween.push(baseGap); // not used visually but keeps array aligned
+    }
+  }
+
   return (
     <ReserveMenuProvider>
       <div className="relative bg-white overflow-hidden min-h-screen">
@@ -127,7 +167,7 @@ function TournamentBracketPage() {
               >
                 <div className="flex items-start overflow-x-auto pb-4">
                   {bracket.rounds.map((round, idx) => (
-                    <div key={`round-wrapper-${round.round}`} style={{ marginRight: idx === 0 ? '96px' : idx === 1 ? '96px' : '48px' }}>
+                    <div key={`round-wrapper-${round.round}`} style={{ marginRight: idx === bracket.rounds.length - 1 ? '46.5px' : idx === 0 ? '96px' : idx === 1 ? '96px' : '48px' }}>
                       <RoundColumn
                         key={`round-${round.round}`}
                         round={round}
@@ -140,6 +180,10 @@ function TournamentBracketPage() {
                         scores={scores}
                         setScores={setScores}
                         isActive={round.round === activeRoundNumber}
+                        marginTop={roundMarginTop[idx]}
+                        gapBetweenMatches={roundGapBetween[idx]}
+                        matchHeight={cardHeight}
+                        firstRoundMatches={firstRoundMatches}
                       />
                     </div>
                   ))}
@@ -215,66 +259,12 @@ function TournamentBracketPage() {
   );
 
 
-function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive }) {
-  const roundNames = ["Round 1", "Quarterfinals", "Semifinals", "Finals"];
-  const displayName = isFinal
-    ? "Finals"
-    : roundNames[roundIndex] || `Round ${roundIndex + 1}`;
-
-  // Alapértékek
-  const cardHeight = 96; // Egy kártya magassága
-  const baseGap = 32; // Alapértelmezett távolság kártyák között
-  
-  let marginTop = 0;
-  let gapBetweenMatches = baseGap;
-  
-  // Round 1: 4 meccs, alapértelmezett gap
-  if (roundIndex === 0) {
-    marginTop = 0;
-    gapBetweenMatches = baseGap;
-  } 
-  // Quarterfinals: 2 meccs, a függőleges vonalak közepére
-  else if (roundIndex === 1) {
-    // Első két Round 1 meccs középpontjai:
-    // R1[0] közepe: 48px (0 + 96/2)
-    // R1[1] közepe: 176px (128 + 96/2)
-    // Függőleges vonal középpontja: (48 + 176) / 2 = 112px
-    // QF kártya közepének ide kell kerülnie
-    // QF teteje: 112 - 48 = 64px
-    marginTop = 64;
-    
-    // Második QF ugyanígy:
-    // R1[2] közepe: 304px (256 + 48)
-    // R1[3] közepe: 432px (384 + 48)
-    // Függőleges vonal középpontja: (304 + 432) / 2 = 368px
-    // Második QF teteje: 368 - 48 = 320px
-    // Gap az első QF tetejétől (64px): 320 - 64 = 256px
-    // De CSS gap a két elem KÖZÖTT van, nem a tetejüktől
-    // Első QF alja: 64 + 96 = 160px
-    // Második QF teteje: 320px
-    // Távolság: 320 - 160 = 160px
-    gapBetweenMatches = 160;
-  } 
-  // Semifinals: 2 meccs, a QF vonalak találkozásánál
-  else if (roundIndex === 2) {
-    // Első QF középpontja: 112px
-    // Második QF középpontja: 368px (112 + 256)
-    // Első SF a kettő között: (112 + 368) / 2 = 240px
-    // SF teteje: 240 - 48 = 192px
-    marginTop = 192;
-    // Ha két SF van, akkor ugyanúgy számolva
-    gapBetweenMatches = 256;
-  }
-  // Finals: 1 meccs, középre a két Semifinals meccs között
-  else if (roundIndex === 3) {
-    // Első SF középpontja: 240px
-    // Második SF középpontja: 496px (240 + 256)
-    // Finals középpontja: (240 + 496) / 2 = 368px
-    // Finals teteje: 368 - 48 = 320px
-    marginTop = 320;
-    gapBetweenMatches = baseGap;
-  }
-
+function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive, marginTop, gapBetweenMatches, matchHeight, firstRoundMatches }) {
+  // Round name logic adapts for 16-player first round
+  const baseNames = firstRoundMatches === 8
+    ? ["Round of 16", "Quarterfinals", "Semifinals", "Finals"]
+    : ["Round 1", "Quarterfinals", "Semifinals", "Finals"];
+  const displayName = isFinal ? "Finals" : baseNames[roundIndex] || `Round ${roundIndex + 1}`;
   return (
     <motion.div 
       className="flex flex-col" 
@@ -296,22 +286,22 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
           <div key={match.id} className="relative">
             {/* Horizontal line coming INTO the match from previous round */}
             {roundIndex > 0 && (
-              <div className="absolute right-full h-[3px] w-[48px] bg-green" style={{ top: 'calc(50% - 1.5px)' }} />
+              <div className="absolute right-full bg-green" style={{ top: 'calc(50% - 1.5px)', height: '3px', width: '46.5px' }} />
             )}
             
             {/* Horizontal line going OUT from the match to next round */}
             {!isFinal && (
-              <div className="absolute left-full h-[3px] w-[48px] bg-green" style={{ top: 'calc(50% - 1.5px)' }} />
+              <div className="absolute left-full bg-green" style={{ top: 'calc(50% - 1.5px)', height: '3px', width: '46.5px' }} />
             )}
             
             {/* Vertical connector connecting pairs of matches to next round */}
             {!isFinal && matchIdx % 2 === 0 && matchIdx + 1 < round.matches.length && (
               <div 
-                className="absolute left-[calc(100%+48px)] bg-green"
+                className="absolute left-[calc(100%+46.5px)] bg-green"
                 style={{ 
                   top: 'calc(50% - 1.5px)',
                   width: '3px',
-                  height: `${gapBetweenMatches + cardHeight}px`
+                  height: `${gapBetweenMatches + matchHeight - 1.5}px`
                 }}
               />
             )}
