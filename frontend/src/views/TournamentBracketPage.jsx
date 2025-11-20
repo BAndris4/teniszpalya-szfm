@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -11,7 +12,6 @@ function TournamentBracketPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useCurrentUser();
-  
   const [bracket, setBracket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -24,7 +24,7 @@ function TournamentBracketPage() {
 
   async function loadBracket() {
     try {
-      const res = await fetch(`${API_BASE}/${id}/bracket`, {
+      const res = await fetch(`http://localhost:5044/api/tournaments/${id}/bracket`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error(`Failed to load bracket: ${res.status}`);
@@ -43,7 +43,7 @@ function TournamentBracketPage() {
     try {
       setSavingId(match.id);
       const res = await fetch(
-        `${API_BASE}/${id}/matches/${match.id}/result`,
+        `http://localhost:5044/api/tournaments/${id}/matches/${match.id}/result`,
         {
           method: "POST",
           credentials: "include",
@@ -67,29 +67,11 @@ function TournamentBracketPage() {
     return (
       <ReserveMenuProvider>
         <div className="relative bg-white overflow-hidden min-h-screen">
-          <motion.div
-            className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
-            animate={{
-              top: ["-20vh", "10vh", "-20vh"],
-              left: ["20vw", "30vw", "20vw"],
-            }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <motion.div
-            className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
-            animate={{
-              top: ["60vh", "70vh", "60vh"],
-              left: ["65vw", "55vw", "65vw"],
-            }}
-            transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="relative z-10">
-            <Navbar />
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center">
-                <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-green border-t-transparent mb-4"></div>
-                <p className="text-dark-green-half text-lg">Loading bracket...</p>
-              </div>
+          <Navbar />
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-green border-t-transparent mb-4"></div>
+              <p className="text-dark-green-half text-lg">Loading bracket...</p>
             </div>
           </div>
         </div>
@@ -101,26 +83,16 @@ function TournamentBracketPage() {
     return (
       <ReserveMenuProvider>
         <div className="relative bg-white overflow-hidden min-h-screen">
-          <motion.div
-            className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
-            animate={{
-              top: ["-20vh", "10vh", "-20vh"],
-              left: ["20vw", "30vw", "20vw"],
-            }}
-            transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-          />
-          <div className="relative z-10">
-            <Navbar />
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center">
-                <p className="text-2xl text-red-600 mb-4">{error || "Bracket not found"}</p>
-                <button
-                  onClick={() => navigate("/tournaments")}
-                  className="px-6 py-3 bg-green text-white rounded-xl hover:bg-green/90 font-semibold"
-                >
-                  Back to Tournaments
-                </button>
-              </div>
+          <Navbar />
+          <div className="flex items-center justify-center min-h-screen">
+            <div className="text-center">
+              <p className="text-2xl text-red-600 mb-4">{error || "Bracket not found"}</p>
+              <button
+                onClick={() => navigate("/tournaments")}
+                className="px-6 py-3 bg-green text-white rounded-xl hover:bg-green/90 font-semibold"
+              >
+                Back to Tournaments
+              </button>
             </div>
           </div>
         </div>
@@ -129,72 +101,15 @@ function TournamentBracketPage() {
   }
 
   const totalRounds = bracket.rounds?.length || 0;
-  // Determine active round number (first with any incomplete match)
   const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
-  const isCompletedTournament = bracket.status === 2;
-  
-  // Champion (winner of final match if completed)
-  let champion = null;
-  
-  if (isCompletedTournament && bracket.rounds.length > 0) {
-    const finalRound = bracket.rounds[bracket.rounds.length - 1];
-    const decidedFinal = finalRound.matches.find(m => m.winner);
-    champion = decidedFinal?.winner;
-  }
-  
-  // Use third place match from backend if available
-  const thirdPlaceMatch = bracket.thirdPlaceMatch || null;
-  
-  // Split rounds for proper two-sided bracket like FIFA World Cup
-  let leftRounds = [];
-  let rightRounds = [];
-  let middleRounds = [];
-
-  if (totalRounds === 1) {
-    // Single match (final only)
-    middleRounds = [bracket.rounds[0]];
-  } else if (totalRounds === 2) {
-    // Semi-finals + Final
-    leftRounds = [{ ...bracket.rounds[0], matches: [bracket.rounds[0].matches[0]] }];
-    rightRounds = [{ ...bracket.rounds[0], matches: [bracket.rounds[0].matches[1]] }];
-    middleRounds = [bracket.rounds[1]];
-  } else {
-    // 3+ rounds: proper bracket tree split
-    // The bracket tree splits: left half goes left, right half goes right
-    // Last 1-2 rounds (semi-final, final) go in middle
-    
-    const numMiddleRounds = totalRounds >= 3 ? 2 : 1; // Semi + Final in middle
-    const numSideRounds = totalRounds - numMiddleRounds;
-    
-    // Build left and right sides from early rounds
-    for (let i = 0; i < numSideRounds; i++) {
-      const round = bracket.rounds[i];
-      const totalMatches = round.matches.length;
-      const half = Math.ceil(totalMatches / 2);
-      
-      // Matches that lead to first semi-final go left
-      leftRounds.push({
-        ...round,
-        matches: round.matches.slice(0, half)
-      });
-      
-      // Matches that lead to second semi-final go right
-      rightRounds.push({
-        ...round,
-        matches: round.matches.slice(half)
-      });
-    }
-    
-    // Semi-finals and final go in middle
-    middleRounds = bracket.rounds.slice(numSideRounds);
-  }
+  const thirdPlaceMatch = bracket.thirdPlaceMatch;
+  const champion = bracket.champion;
 
   return (
     <ReserveMenuProvider>
       <div className="relative bg-white overflow-hidden min-h-screen">
         <div className="relative z-10">
           <Navbar />
-          
           <div className="pt-32 px-6 pb-12">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -203,176 +118,51 @@ function TournamentBracketPage() {
               className="max-w-7xl mx-auto"
             >
               {/* Header */}
-              <motion.div 
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5 }}
-                className="mb-8"
-              >
-                <motion.button
-                  onClick={() => navigate("/tournaments")}
-                  className="mb-6 flex items-center gap-2 text-dark-green hover:text-green transition-colors group"
-                  whileHover={{ x: -5 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <motion.svg 
-                    className="w-5 h-5 transition-transform group-hover:-translate-x-1" 
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path fillRule="evenodd" d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z" clipRule="evenodd" />
-                  </motion.svg>
-                  <span className="font-semibold">Back to Tournaments</span>
-                </motion.button>
-                
-                <div className="flex items-center gap-4 mb-3">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.5, type: "spring" }}
-                  >
-                    <svg className="w-12 h-12 text-green" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 0 0 2.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 0 1 2.916.52 6.003 6.003 0 0 1-5.395 4.972m0 0a6.726 6.726 0 0 1-2.749 1.35m0 0a6.772 6.772 0 0 1-3.044 0"/>
-                    </svg>
-                  </motion.div>
-                  <div>
-                    <motion.h1 
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.2 }}
-                      className="text-5xl font-bold text-dark-green"
-                    >
-                      {bracket.tournamentTitle}
-                    </motion.h1>
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.5, delay: 0.3 }}
-                      className="flex items-center gap-2 mt-2"
-                    >
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        bracket.status === 1 
-                          ? 'bg-green/20 text-green' 
-                          : 'bg-gray-200 text-gray-700'
-                      }`}>
-                        {bracket.status === 1 ? "In Progress" : "Completed"}
-                      </span>
-                    </motion.div>
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Bracket */}
-              <motion.div 
+              {/* Bracket - single-elimination, balról jobbra */}
+              <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100"
               >
-                {totalRounds === 1 ? (
-                  <div className="flex items-center justify-center py-8">
-                    <RoundColumn
-                      round={middleRounds[0]}
-                      roundIndex={0}
-                      isFinal={true}
-                      side="final"
-                      isAdmin={isAdmin}
-                      savingId={savingId}
-                      onSubmitResult={submitResult}
-                      scores={scores}
-                      setScores={setScores}
-                    />
-                  </div>
-                ) : (
-                  <div className="flex items-start justify-center gap-12 overflow-x-auto overflow-y-visible pb-4">
-                    {/* Left side */}
-                    {leftRounds.length > 0 && (
-                      <div className="flex gap-8 relative">
-                        {leftRounds.map((round, idx) => (
-                          <RoundColumn
-                            key={`left-${round.round}`}
-                            round={round}
-                            roundIndex={idx}
-                            totalInSide={leftRounds.length}
-                            side="left"
-                            isAdmin={isAdmin}
-                            savingId={savingId}
-                            onSubmitResult={submitResult}
-                            scores={scores}
-                            setScores={setScores}
-                            isActive={round.round === activeRoundNumber}
-                          />
-                        ))}
+                <div className="flex items-start overflow-x-auto pb-4">
+                  {bracket.rounds.map((round, idx) => (
+                    <div key={`round-wrapper-${round.round}`} style={{ marginRight: idx === 0 ? '96px' : idx === 1 ? '96px' : '48px' }}>
+                      <RoundColumn
+                        key={`round-${round.round}`}
+                        round={round}
+                        roundIndex={idx}
+                        isFinal={idx === bracket.rounds.length - 1}
+                        side="left"
+                        isAdmin={isAdmin}
+                        savingId={savingId}
+                        onSubmitResult={submitResult}
+                        scores={scores}
+                        setScores={setScores}
+                        isActive={round.round === activeRoundNumber}
+                      />
+                    </div>
+                  ))}
+                  
+                  {/* 3rd Place Match - jobb oldalt a Finals mellett */}
+                  {thirdPlaceMatch && (
+                    <div className="ml-12 flex flex-col">
+                      <h3 className="mb-6 text-center text-lg font-bold text-gray-700">3rd Place</h3>
+                      <div className="mt-12">
+                        <MatchCard
+                          match={thirdPlaceMatch}
+                          side="final"
+                          isAdmin={isAdmin}
+                          savingId={savingId}
+                          onSubmitResult={submitResult}
+                          scores={scores}
+                          setScores={setScores}
+                        />
                       </div>
-                    )}
-
-                    {/* Middle (semi-finals, finals) */}
-                    {middleRounds.length > 0 && (
-                      <div className="flex gap-8 relative">
-                        {middleRounds.map((round, idx) => (
-                          <RoundColumn
-                            key={`middle-${round.round}`}
-                            round={round}
-                            roundIndex={idx}
-                            isFinal={idx === middleRounds.length - 1}
-                            side="middle"
-                            isAdmin={isAdmin}
-                            savingId={savingId}
-                            onSubmitResult={submitResult}
-                            scores={scores}
-                            setScores={setScores}
-                            isActive={round.round === activeRoundNumber}
-                          />
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Right side */}
-                    {rightRounds.length > 0 && (
-                      <div className="flex flex-row-reverse gap-8 relative">
-                        {rightRounds.map((round, idx) => (
-                          <RoundColumn
-                            key={`right-${round.round}`}
-                            round={round}
-                            roundIndex={idx}
-                            totalInSide={rightRounds.length}
-                            side="right"
-                            isAdmin={isAdmin}
-                            savingId={savingId}
-                            onSubmitResult={submitResult}
-                            scores={scores}
-                            setScores={setScores}
-                            isActive={round.round === activeRoundNumber}
-                          />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                    </div>
+                  )}
+                </div>
               </motion.div>
-
-              {/* 3rd Place Match */}
-              {thirdPlaceMatch && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: 0.3 }}
-                  className="mt-10 flex flex-col items-center"
-                >
-                  <h3 className="mb-4 text-center text-xl font-bold text-gray-700">3rd Place Match</h3>
-                  <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-amber-300">
-                    <MatchCard
-                      match={thirdPlaceMatch}
-                      side="final"
-                      isAdmin={isAdmin}
-                      savingId={savingId}
-                      onSubmitResult={submitResult}
-                      scores={scores}
-                      setScores={setScores}
-                    />
-                  </div>
-                </motion.div>
-              )}
 
               {/* Champion section */}
               {champion && (
@@ -423,88 +213,119 @@ function TournamentBracketPage() {
       </div>
     </ReserveMenuProvider>
   );
-}
+
 
 function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive }) {
-  const roundNames = ["Round 1", "Round 2", "Semi-Finals", "Finals"];
+  const roundNames = ["Round 1", "Quarterfinals", "Semifinals", "Finals"];
   const displayName = isFinal
     ? "Finals"
     : roundNames[roundIndex] || `Round ${roundIndex + 1}`;
 
-  const marginTop = roundIndex > 0 ? `${roundIndex * 3}rem` : "0";
-
-  const pairs = [];
-  for (let i = 0; i < round.matches.length; i += 2) {
-    pairs.push(round.matches.slice(i, i + 2));
+  // Alapértékek
+  const cardHeight = 96; // Egy kártya magassága
+  const baseGap = 32; // Alapértelmezett távolság kártyák között
+  
+  let marginTop = 0;
+  let gapBetweenMatches = baseGap;
+  
+  // Round 1: 4 meccs, alapértelmezett gap
+  if (roundIndex === 0) {
+    marginTop = 0;
+    gapBetweenMatches = baseGap;
+  } 
+  // Quarterfinals: 2 meccs, a függőleges vonalak közepére
+  else if (roundIndex === 1) {
+    // Első két Round 1 meccs középpontjai:
+    // R1[0] közepe: 48px (0 + 96/2)
+    // R1[1] közepe: 176px (128 + 96/2)
+    // Függőleges vonal középpontja: (48 + 176) / 2 = 112px
+    // QF kártya közepének ide kell kerülnie
+    // QF teteje: 112 - 48 = 64px
+    marginTop = 64;
+    
+    // Második QF ugyanígy:
+    // R1[2] közepe: 304px (256 + 48)
+    // R1[3] közepe: 432px (384 + 48)
+    // Függőleges vonal középpontja: (304 + 432) / 2 = 368px
+    // Második QF teteje: 368 - 48 = 320px
+    // Gap az első QF tetejétől (64px): 320 - 64 = 256px
+    // De CSS gap a két elem KÖZÖTT van, nem a tetejüktől
+    // Első QF alja: 64 + 96 = 160px
+    // Második QF teteje: 320px
+    // Távolság: 320 - 160 = 160px
+    gapBetweenMatches = 160;
+  } 
+  // Semifinals: 2 meccs, a QF vonalak találkozásánál
+  else if (roundIndex === 2) {
+    // Első QF középpontja: 112px
+    // Második QF középpontja: 368px (112 + 256)
+    // Első SF a kettő között: (112 + 368) / 2 = 240px
+    // SF teteje: 240 - 48 = 192px
+    marginTop = 192;
+    // Ha két SF van, akkor ugyanúgy számolva
+    gapBetweenMatches = 256;
+  }
+  // Finals: 1 meccs, középre a két Semifinals meccs között
+  else if (roundIndex === 3) {
+    // Első SF középpontja: 240px
+    // Második SF középpontja: 496px (240 + 256)
+    // Finals középpontja: (240 + 496) / 2 = 368px
+    // Finals teteje: 368 - 48 = 320px
+    marginTop = 320;
+    gapBetweenMatches = baseGap;
   }
 
   return (
     <motion.div 
       className="flex flex-col" 
-      style={{ marginTop }}
-      initial={{ opacity: 0, x: side === "left" ? -30 : side === "right" ? 30 : 0 }}
+      style={{ marginTop: `${marginTop}px` }}
+      initial={{ opacity: 0, x: -30 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: roundIndex * 0.1 }}
     >
       <motion.h3 
-        className="mb-4 text-center text-lg font-bold text-dark-green"
+        className="mb-6 text-center text-lg font-bold text-dark-green"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: roundIndex * 0.1 + 0.2 }}
       >
         {displayName}
       </motion.h3>
-      <div className="flex flex-col gap-6">
-        {pairs.map((pair, idx) => (
-          <div key={`pair-${idx}`} className="relative flex flex-col gap-6">
-            {pair.length === 2 && (
-              <>
-                {/* Vertical line connecting the two matches */}
-                <motion.div
-                  className={
-                    "absolute w-[2px] rounded bg-green " +
-                    (side === "left"
-                      ? "right-[-58px] top-[25%] bottom-[25%]"
-                      : side === "right"
-                      ? "left-[-58px] top-[25%] bottom-[25%]"
-                      : "right-[-58px] top-[25%] bottom-[25%]")
-                  }
-                  initial={{ scaleY: 0 }}
-                  animate={{ scaleY: 1 }}
-                  transition={{ duration: 0.6, delay: idx * 0.12 }}
-                />
-                {/* Horizontal bridge from vertical to next round (if not final) */}
-                {!isFinal && (
-                  <motion.div
-                    className={
-                      "absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-green " +
-                      (side === "left"
-                        ? "right-[-90px] w-[32px]"
-                        : side === "right"
-                        ? "left-[-90px] w-[32px]"
-                        : "right-[-90px] w-[32px]")
-                    }
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 0.5, delay: idx * 0.12 + 0.3 }}
-                  />
-                )}
-              </>
+      <div className="flex flex-col relative" style={{ gap: `${gapBetweenMatches}px` }}>
+        {round.matches.map((match, matchIdx) => (
+          <div key={match.id} className="relative">
+            {/* Horizontal line coming INTO the match from previous round */}
+            {roundIndex > 0 && (
+              <div className="absolute right-full h-[3px] w-[48px] bg-green" style={{ top: 'calc(50% - 1.5px)' }} />
             )}
-
-            {pair.map((match) => (
-              <MatchCard
-                key={match.id}
-                match={match}
-                side={side}
-                isAdmin={isAdmin}
-                savingId={savingId}
-                onSubmitResult={onSubmitResult}
-                scores={scores}
-                setScores={setScores}
-                isActiveRound={isActive}
+            
+            {/* Horizontal line going OUT from the match to next round */}
+            {!isFinal && (
+              <div className="absolute left-full h-[3px] w-[48px] bg-green" style={{ top: 'calc(50% - 1.5px)' }} />
+            )}
+            
+            {/* Vertical connector connecting pairs of matches to next round */}
+            {!isFinal && matchIdx % 2 === 0 && matchIdx + 1 < round.matches.length && (
+              <div 
+                className="absolute left-[calc(100%+48px)] bg-green"
+                style={{ 
+                  top: 'calc(50% - 1.5px)',
+                  width: '3px',
+                  height: `${gapBetweenMatches + cardHeight}px`
+                }}
               />
-            ))}
+            )}
+            
+            <MatchCard
+              match={match}
+              side={side}
+              isAdmin={isAdmin}
+              savingId={savingId}
+              onSubmitResult={onSubmitResult}
+              scores={scores}
+              setScores={setScores}
+              isActiveRound={isActive}
+            />
           </div>
         ))}
       </div>
@@ -526,19 +347,6 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Connector lines */}
-      {side === "left" && (
-        <div className="absolute right-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
-      )}
-      {side === "right" && (
-        <div className="absolute left-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
-      )}
-      {side === "middle" && (
-        <>
-          <div className="absolute right-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
-          <div className="absolute left-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
-        </>
-      )}
 
       {/* Player 1 */}
       <motion.div
@@ -660,4 +468,5 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   );
 }
 
+}
 export default TournamentBracketPage;
