@@ -14,6 +14,7 @@ function TournamentBracketPage() {
   const navigate = useNavigate();
   const { user } = useCurrentUser();
   const [bracket, setBracket] = useState(null);
+  const [tournament, setTournament] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [savingId, setSavingId] = useState(null);
@@ -22,19 +23,26 @@ function TournamentBracketPage() {
   const { topBlob, bottomBlob } = backgroundPositions.Hero;
 
   useEffect(() => {
-    loadBracket();
+    loadData();
   }, [id]);
 
-  async function loadBracket() {
+  async function loadData() {
     try {
-      const res = await fetch(`http://localhost:5044/api/tournaments/${id}/bracket`, {
-        credentials: "include",
-      });
-      if (!res.ok) throw new Error(`Failed to load bracket: ${res.status}`);
-      const data = await res.json();
-      setBracket(data);
+      const [brRes, tRes] = await Promise.all([
+        fetch(`http://localhost:5044/api/tournaments/${id}/bracket`, { credentials: "include" }),
+        fetch(`http://localhost:5044/api/tournaments/${id}`)
+      ]);
+
+      if (!brRes.ok) throw new Error(`Failed to load bracket: ${brRes.status}`);
+      const brData = await brRes.json();
+      setBracket(brData);
+
+      if (tRes.ok) {
+        const tData = await tRes.json();
+        setTournament(tData);
+      }
     } catch (e) {
-      setError(e?.message || "Failed to load bracket");
+      setError(e?.message || "Failed to load data");
     } finally {
       setLoading(false);
     }
@@ -59,7 +67,7 @@ function TournamentBracketPage() {
         }
       );
       if (!res.ok) throw new Error(`Failed to save result: ${res.status}`);
-      await loadBracket();
+      await loadData();
     } catch (e) {
       setError(e?.message || "Failed to save result");
     } finally {
@@ -173,14 +181,155 @@ function TournamentBracketPage() {
               className="max-w-7xl mx-auto"
             >
               {/* Header */}
+              {tournament && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="mb-12 bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50"
+                >
+                  <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="px-3 py-1 rounded-full bg-green/10 text-green text-xs font-bold uppercase tracking-wider">
+                          Tournament
+                        </span>
+                        {tournament.fee === 0 && (
+                          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
+                            Free Entry
+                          </span>
+                        )}
+                      </div>
+                      <h1 className="text-4xl md:text-5xl font-extrabold text-dark-green mb-4 leading-tight">
+                        {tournament.title}
+                      </h1>
+                      {tournament.description && (
+                        <p className="text-lg text-dark-green-half max-w-3xl leading-relaxed mb-6">
+                          {tournament.description}
+                        </p>
+                      )}
+                      
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
+                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Date</p>
+                            <p className="text-sm font-bold text-gray-800">
+                              {new Date(tournament.startDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}
+                            </p>
+                          </div>
+                        </div>
+
+                        {tournament.location && (
+                          <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
+                            <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-500 font-medium">Location</p>
+                              <p className="text-sm font-bold text-gray-800 truncate max-w-[120px]" title={tournament.location}>
+                                {tournament.location}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
+                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Participants</p>
+                            <p className="text-sm font-bold text-gray-800">
+                              {tournament.currentParticipants} / {tournament.maxParticipants}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
+                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <p className="text-xs text-gray-500 font-medium">Entry Fee</p>
+                            <p className="text-sm font-bold text-gray-800">
+                              {tournament.fee > 0 ? `${tournament.fee} Ft` : "Free"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-3 min-w-[140px]">
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate(`/tournaments/${id}`)}
+                        className="w-full px-6 py-3 rounded-xl bg-green text-white font-bold shadow-lg shadow-green/20 hover:shadow-green/40 transition-all flex items-center justify-center gap-2"
+                      >
+                        <span>Details</span>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                      </motion.button>
+                      <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => navigate("/tournaments")}
+                        className="w-full px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-green hover:text-green hover:bg-green/5 transition-all flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        <span>Back</span>
+                      </motion.button>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
               {/* Bracket - single-elimination, balról jobbra */}
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100"
+                className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100 relative overflow-hidden"
               >
-                <div className="flex items-start overflow-x-auto pb-4 w-full">
+                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green/40 via-green to-green/40" />
+                
+                <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
+                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-green text-white flex items-center justify-center">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                      </svg>
+                    </span>
+                    Tournament Bracket
+                  </h2>
+                  <div className="flex gap-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-500">
+                      <span className="w-3 h-3 rounded-full bg-green"></span>
+                      <span>Winner</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-gray-500 ml-4">
+                      <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-300"></span>
+                      <span>Pending</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start overflow-x-auto pb-4 w-full custom-scrollbar">
                   {bracket.rounds.length === 1 ? (
                     <div className="flex justify-center w-full">
                       <RoundColumn
@@ -318,7 +467,7 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
       transition={{ duration: 0.5, delay: roundIndex * 0.1 }}
     >
       <motion.h3 
-        className="mb-6 text-center text-lg font-bold text-dark-green"
+        className="mb-6 text-center text-xs font-extrabold text-gray-400 uppercase tracking-widest"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: roundIndex * 0.1 + 0.2 }}
@@ -345,7 +494,7 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
                 style={{ 
                   top: 'calc(50% - 1.5px)',
                   width: '3px',
-                  height: `${gapBetweenMatches + matchHeight + 1.5}px`
+                  height: `${gapBetweenMatches + matchHeight +3}px`
                 }}
               />
             )}
@@ -376,7 +525,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
 
   return (
     <motion.div 
-      className="relative w-56 rounded-xl border-2 border-gray-200 bg-white shadow-md transition-all group"
+      className="relative w-56 h-24 rounded-xl border-2 border-gray-200 bg-white shadow-md transition-all group flex flex-col justify-center"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}

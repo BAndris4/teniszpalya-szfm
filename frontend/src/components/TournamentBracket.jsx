@@ -128,10 +128,6 @@ export default function TournamentBracket({ tournamentId, onClose }) {
     
     middleRounds = [bracket.rounds[1]];
   } else {
-    // 8+ players: split multiple rounds
-    // Left side: first half of early rounds
-    // Right side: second half of early rounds  
-    // Middle: semi-finals and finals
     
     const numEarlyRounds = totalRounds - 2; // All except semi and finals
     
