@@ -130,7 +130,7 @@ function TournamentBracketPage() {
 
   const totalRounds = bracket.rounds?.length || 0;
   // Determine active round number (first with any incomplete match)
-  const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round;
+  const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
   const isCompletedTournament = bracket.status === 2;
   // Champion (winner of final match if completed)
   let champion = null;
@@ -300,10 +300,10 @@ function TournamentBracketPage() {
                     />
                   </div>
                 ) : (
-                  <div className="flex items-start justify-center gap-12 overflow-x-auto pb-4">
+                  <div className="flex items-start justify-center gap-12 overflow-x-auto overflow-y-visible pb-4">
                     {/* Left side */}
                     {leftRounds.length > 0 && (
-                      <div className="flex gap-8">
+                      <div className="flex gap-8 relative">
                         {leftRounds.map((round, idx) => (
                           <RoundColumn
                             key={`left-${round.round}`}
@@ -324,7 +324,7 @@ function TournamentBracketPage() {
 
                     {/* Middle (semi-finals, finals) */}
                     {middleRounds.length > 0 && (
-                      <div className="flex gap-8">
+                      <div className="flex gap-8 relative">
                         {middleRounds.map((round, idx) => (
                           <RoundColumn
                             key={`middle-${round.round}`}
@@ -345,7 +345,7 @@ function TournamentBracketPage() {
 
                     {/* Right side */}
                     {rightRounds.length > 0 && (
-                      <div className="flex flex-row-reverse gap-8">
+                      <div className="flex flex-row-reverse gap-8 relative">
                         {rightRounds.map((round, idx) => (
                           <RoundColumn
                             key={`right-${round.round}`}
@@ -451,19 +451,38 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
         {pairs.map((pair, idx) => (
           <div key={`pair-${idx}`} className="relative flex flex-col gap-6">
             {pair.length === 2 && (
-              <motion.div
-                className={
-                  "absolute w-[3px] rounded bg-gradient-to-b from-green/70 to-green/30 " +
-                  (side === "left"
-                    ? "right-[-55px] top-[25%] bottom-[25%]"
-                    : side === "right"
-                    ? "left-[-55px] top-[25%] bottom-[25%]"
-                    : "right-[-55px] top-[25%] bottom-[25%]")
-                }
-                initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
-                transition={{ duration: 0.6, delay: idx * 0.12 }}
-              />
+              <>
+                {/* Vertical line connecting the two matches */}
+                <motion.div
+                  className={
+                    "absolute w-[4px] rounded bg-gradient-to-b from-green via-green to-green/70 shadow-sm " +
+                    (side === "left"
+                      ? "right-[-65px] top-[25%] bottom-[25%]"
+                      : side === "right"
+                      ? "left-[-65px] top-[25%] bottom-[25%]"
+                      : "right-[-65px] top-[25%] bottom-[25%]")
+                  }
+                  initial={{ scaleY: 0 }}
+                  animate={{ scaleY: 1 }}
+                  transition={{ duration: 0.6, delay: idx * 0.12 }}
+                />
+                {/* Horizontal bridge from vertical to next round (if not final) */}
+                {!isFinal && (
+                  <motion.div
+                    className={
+                      "absolute top-1/2 h-[4px] -translate-y-1/2 rounded-full bg-gradient-to-r shadow-sm " +
+                      (side === "left"
+                        ? "right-[-97px] w-[32px] from-green/70 to-green/40"
+                        : side === "right"
+                        ? "left-[-97px] w-[32px] from-green/40 to-green/70 scale-x-[-1]"
+                        : "right-[-97px] w-[32px] from-green/70 to-green/40")
+                    }
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.5, delay: idx * 0.12 + 0.3 }}
+                  />
+                )}
+              </>
             )}
 
             {pair.map((match) => (
@@ -495,7 +514,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
 
   return (
     <motion.div 
-      className="relative w-56 rounded-xl border-2 border-gray-200 bg-white shadow-md hover:shadow-xl transition-all overflow-hidden group"
+      className="relative w-56 rounded-xl border-2 border-gray-200 bg-white shadow-md hover:shadow-xl transition-all group"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
@@ -503,15 +522,15 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
     >
       {/* Connector lines */}
       {side === "left" && (
-        <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-300" />
+        <div className="absolute right-[-65px] top-1/2 h-[4px] w-[65px] -translate-y-1/2 bg-gradient-to-r from-green via-green/80 to-green/60 rounded-full shadow-sm" />
       )}
       {side === "right" && (
-        <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-300" />
+        <div className="absolute left-[-65px] top-1/2 h-[4px] w-[65px] -translate-y-1/2 bg-gradient-to-l from-green via-green/80 to-green/60 rounded-full shadow-sm" />
       )}
       {side === "middle" && (
         <>
-          <div className="absolute right-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-300" />
-          <div className="absolute left-[-50px] top-1/2 h-[2px] w-12 -translate-y-1/2 bg-gray-300" />
+          <div className="absolute right-[-65px] top-1/2 h-[4px] w-[65px] -translate-y-1/2 bg-gradient-to-r from-green via-green/80 to-green/60 rounded-full shadow-sm" />
+          <div className="absolute left-[-65px] top-1/2 h-[4px] w-[65px] -translate-y-1/2 bg-gradient-to-l from-green via-green/80 to-green/60 rounded-full shadow-sm" />
         </>
       )}
       
@@ -525,7 +544,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
 
       {/* Player 1 */}
       <motion.div
-        className={`border-b border-gray-100 px-4 py-3 transition-all relative ${
+        className={`border-b border-gray-100 px-4 py-3 transition-all relative flex items-center justify-between ${
           isCompleted && winner?.id === match.player1?.id
             ? "bg-green/10 font-bold text-dark-green"
             : "text-gray-700 hover:bg-gray-50"
@@ -549,11 +568,14 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
           )}
           {player1Name}
         </p>
+        {match.score && isCompleted && (
+          <span className="text-xs font-semibold text-gray-600">{match.score.split('-')[0] || match.score}</span>
+        )}
       </motion.div>
 
       {/* Player 2 */}
       <motion.div
-        className={`px-4 py-3 transition-all relative ${
+        className={`px-4 py-3 transition-all relative flex items-center justify-between ${
           isCompleted && winner?.id === match.player2?.id
             ? "bg-green/10 font-bold text-dark-green"
             : "text-gray-700 hover:bg-gray-50"
@@ -577,19 +599,10 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
           )}
           {player2Name}
         </p>
+        {match.score && isCompleted && (
+          <span className="text-xs font-semibold text-gray-600">{match.score.split('-')[1] || ''}</span>
+        )}
       </motion.div>
-
-      {/* Score */}
-      {match.score && (
-        <motion.div 
-          className="border-t border-gray-100 bg-gray-50 px-4 py-2 text-center"
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          transition={{ duration: 0.3 }}
-        >
-          <p className="text-xs text-gray-600 font-semibold">{match.score}</p>
-        </motion.div>
-      )}
 
       {canSet && (
         <motion.div 
