@@ -266,13 +266,26 @@ namespace Teniszpalya.API.Controllers
                 .ThenBy(m => m.MatchNumber)
                 .ToListAsync();
 
+            // Separate 3rd place match from regular rounds
+            var thirdPlaceMatchEntity = matches.FirstOrDefault(m => m.Round == -1);
+            var regularMatches = matches.Where(m => m.Round >= 0).ToList();
+
             // Get all participants
-            var playerIds = matches
+            var playerIds = regularMatches
                 .SelectMany(m => new[] { m.Player1ID, m.Player2ID, m.WinnerID })
                 .Where(pid => pid.HasValue)
                 .Select(pid => pid!.Value)
                 .Distinct()
                 .ToList();
+
+            // Add 3rd place match participants if exists
+            if (thirdPlaceMatchEntity != null)
+            {
+                if (thirdPlaceMatchEntity.Player1ID.HasValue) playerIds.Add(thirdPlaceMatchEntity.Player1ID.Value);
+                if (thirdPlaceMatchEntity.Player2ID.HasValue) playerIds.Add(thirdPlaceMatchEntity.Player2ID.Value);
+                if (thirdPlaceMatchEntity.WinnerID.HasValue) playerIds.Add(thirdPlaceMatchEntity.WinnerID.Value);
+                playerIds = playerIds.Distinct().ToList();
+            }
 
             var users = await _context.Users
                 .Where(u => playerIds.Contains(u.ID))
@@ -281,8 +294,8 @@ namespace Teniszpalya.API.Controllers
 
             var userDict = users.ToDictionary(u => u.ID);
 
-            // Group matches by round
-            var rounds = matches
+            // Group matches by round (only regular matches)
+            var rounds = regularMatches
                 .GroupBy(m => m.Round)
                 .OrderBy(g => g.Key)
                 .Select(g => new
@@ -306,36 +319,26 @@ namespace Teniszpalya.API.Controllers
                     }).ToList()
                 }).ToList();
 
-            // Create 3rd place match from semi-final losers
+            // Create 3rd place match object from database if exists
             object? thirdPlaceMatch = null;
-            if (rounds.Count >= 2 && tournament.Status == TournamentStatus.Completed)
+            if (thirdPlaceMatchEntity != null)
             {
-                var semiFinalRound = rounds[rounds.Count - 2];
-                var semiFinalMatches = semiFinalRound.matches
-                    .Where(m => m.status == MatchStatus.Completed && m.winner != null)
-                    .ToList();
-
-                if (semiFinalMatches.Count >= 2)
+                thirdPlaceMatch = new
                 {
-                    var losers = semiFinalMatches
-                        .Select(m => m.player1?.id == m.winner?.id ? m.player2 : m.player1)
-                        .Where(p => p != null)
-                        .ToList();
-
-                    if (losers.Count == 2)
-                    {
-                        thirdPlaceMatch = new
-                        {
-                            id = "third-place",
-                            matchNumber = 999,
-                            player1 = losers[0],
-                            player2 = losers[1],
-                            winner = (object?)null,
-                            score = (string?)null,
-                            status = MatchStatus.Pending
-                        };
-                    }
-                }
+                    id = thirdPlaceMatchEntity.ID,
+                    matchNumber = thirdPlaceMatchEntity.MatchNumber,
+                    player1 = thirdPlaceMatchEntity.Player1ID.HasValue && userDict.ContainsKey(thirdPlaceMatchEntity.Player1ID.Value)
+                        ? new { id = thirdPlaceMatchEntity.Player1ID.Value, name = $"{userDict[thirdPlaceMatchEntity.Player1ID.Value].FirstName} {userDict[thirdPlaceMatchEntity.Player1ID.Value].LastName}" }
+                        : null,
+                    player2 = thirdPlaceMatchEntity.Player2ID.HasValue && userDict.ContainsKey(thirdPlaceMatchEntity.Player2ID.Value)
+                        ? new { id = thirdPlaceMatchEntity.Player2ID.Value, name = $"{userDict[thirdPlaceMatchEntity.Player2ID.Value].FirstName} {userDict[thirdPlaceMatchEntity.Player2ID.Value].LastName}" }
+                        : null,
+                    winner = thirdPlaceMatchEntity.WinnerID.HasValue && userDict.ContainsKey(thirdPlaceMatchEntity.WinnerID.Value)
+                        ? new { id = thirdPlaceMatchEntity.WinnerID.Value, name = $"{userDict[thirdPlaceMatchEntity.WinnerID.Value].FirstName} {userDict[thirdPlaceMatchEntity.WinnerID.Value].LastName}" }
+                        : null,
+                    score = thirdPlaceMatchEntity.Score,
+                    status = thirdPlaceMatchEntity.Status
+                };
             }
 
             return Ok(new
@@ -408,9 +411,64 @@ namespace Teniszpalya.API.Controllers
                 }
             }
 
+            // Check if we need to create/update 3rd place match after semi-finals
+            await CheckAndCreateThirdPlaceMatch(tournamentId, match.Round);
+
             await _context.SaveChangesAsync();
 
             return Ok(new { message = "Match result saved successfully" });
+        }
+
+        private async Task CheckAndCreateThirdPlaceMatch(int tournamentId, int completedRound)
+        {
+            // Get total rounds to identify semi-finals
+            var totalRounds = await _context.Matches
+                .Where(m => m.TournamentID == tournamentId)
+                .Select(m => m.Round)
+                .MaxAsync();
+
+            var semiFinalRound = totalRounds - 1;
+
+            // Only proceed if we just completed a semi-final
+            if (completedRound != semiFinalRound) return;
+
+            // Check if both semi-finals are completed
+            var semiFinals = await _context.Matches
+                .Where(m => m.TournamentID == tournamentId && m.Round == semiFinalRound)
+                .ToListAsync();
+
+            if (semiFinals.Count < 2 || !semiFinals.All(m => m.Status == MatchStatus.Completed))
+                return;
+
+            // Get losers
+            var losers = semiFinals
+                .Where(m => m.WinnerID.HasValue)
+                .Select(m => m.Player1ID == m.WinnerID ? m.Player2ID : m.Player1ID)
+                .Where(id => id.HasValue)
+                .Select(id => id!.Value)
+                .ToList();
+
+            if (losers.Count != 2) return;
+
+            // Check if 3rd place match already exists
+            var existingThirdPlace = await _context.Matches
+                .FirstOrDefaultAsync(m => m.TournamentID == tournamentId && m.Round == -1);
+
+            if (existingThirdPlace == null)
+            {
+                // Create 3rd place match
+                var thirdPlaceMatch = new Match
+                {
+                    TournamentID = tournamentId,
+                    Round = -1, // Special round number for 3rd place
+                    MatchNumber = 999,
+                    Player1ID = losers[0],
+                    Player2ID = losers[1],
+                    Status = MatchStatus.Pending
+                };
+
+                _context.Matches.Add(thirdPlaceMatch);
+            }
         }
     }
 }

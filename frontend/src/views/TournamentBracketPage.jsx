@@ -151,41 +151,42 @@ function TournamentBracketPage() {
   let middleRounds = [];
 
   if (totalRounds === 1) {
+    // Single match (final only)
     middleRounds = [bracket.rounds[0]];
   } else if (totalRounds === 2) {
-    const firstRound = bracket.rounds[0];
-    const half = Math.ceil(firstRound.matches.length / 2);
-    
-    leftRounds = [{
-      ...firstRound,
-      matches: firstRound.matches.slice(0, half)
-    }];
-    
-    rightRounds = [{
-      ...firstRound,
-      matches: firstRound.matches.slice(half)
-    }];
-    
+    // Semi-finals + Final
+    leftRounds = [{ ...bracket.rounds[0], matches: [bracket.rounds[0].matches[0]] }];
+    rightRounds = [{ ...bracket.rounds[0], matches: [bracket.rounds[0].matches[1]] }];
     middleRounds = [bracket.rounds[1]];
   } else {
-    const numEarlyRounds = totalRounds - 2;
+    // 3+ rounds: proper bracket tree split
+    // The bracket tree splits: left half goes left, right half goes right
+    // Last 1-2 rounds (semi-final, final) go in middle
     
-    for (let i = 0; i < numEarlyRounds; i++) {
+    const numMiddleRounds = totalRounds >= 3 ? 2 : 1; // Semi + Final in middle
+    const numSideRounds = totalRounds - numMiddleRounds;
+    
+    // Build left and right sides from early rounds
+    for (let i = 0; i < numSideRounds; i++) {
       const round = bracket.rounds[i];
-      const half = Math.ceil(round.matches.length / 2);
+      const totalMatches = round.matches.length;
+      const half = Math.ceil(totalMatches / 2);
       
+      // Matches that lead to first semi-final go left
       leftRounds.push({
         ...round,
         matches: round.matches.slice(0, half)
       });
       
+      // Matches that lead to second semi-final go right
       rightRounds.push({
         ...round,
         matches: round.matches.slice(half)
       });
     }
     
-    middleRounds = bracket.rounds.slice(numEarlyRounds);
+    // Semi-finals and final go in middle
+    middleRounds = bracket.rounds.slice(numSideRounds);
   }
 
   return (
@@ -461,12 +462,12 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 {/* Vertical line connecting the two matches */}
                 <motion.div
                   className={
-                    "absolute w-[2px] rounded bg-gradient-to-b from-green via-green to-green/70 " +
+                    "absolute w-[2px] rounded bg-green " +
                     (side === "left"
-                      ? "right-[-65px] top-[25%] bottom-[25%]"
+                      ? "right-[-58px] top-[25%] bottom-[25%]"
                       : side === "right"
-                      ? "left-[-65px] top-[25%] bottom-[25%]"
-                      : "right-[-65px] top-[25%] bottom-[25%]")
+                      ? "left-[-58px] top-[25%] bottom-[25%]"
+                      : "right-[-58px] top-[25%] bottom-[25%]")
                   }
                   initial={{ scaleY: 0 }}
                   animate={{ scaleY: 1 }}
@@ -476,12 +477,12 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                 {!isFinal && (
                   <motion.div
                     className={
-                      "absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-gradient-to-r " +
+                      "absolute top-1/2 h-[2px] -translate-y-1/2 rounded-full bg-green " +
                       (side === "left"
-                        ? "right-[-97px] w-[32px] from-green/70 to-green/40"
+                        ? "right-[-90px] w-[32px]"
                         : side === "right"
-                        ? "left-[-97px] w-[32px] from-green/40 to-green/70 scale-x-[-1]"
-                        : "right-[-97px] w-[32px] from-green/70 to-green/40")
+                        ? "left-[-90px] w-[32px]"
+                        : "right-[-90px] w-[32px]")
                     }
                     initial={{ scaleX: 0 }}
                     animate={{ scaleX: 1 }}
@@ -527,19 +528,17 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
     >
       {/* Connector lines */}
       {side === "left" && (
-        <div className="absolute right-[-65px] top-1/2 h-[2px] w-[65px] -translate-y-1/2 bg-gradient-to-r from-green via-green/80 to-green/60 rounded-full" />
+        <div className="absolute right-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
       )}
       {side === "right" && (
-        <div className="absolute left-[-65px] top-1/2 h-[2px] w-[65px] -translate-y-1/2 bg-gradient-to-l from-green via-green/80 to-green/60 rounded-full" />
+        <div className="absolute left-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
       )}
       {side === "middle" && (
         <>
-          <div className="absolute right-[-65px] top-1/2 h-[2px] w-[65px] -translate-y-1/2 bg-gradient-to-r from-green via-green/80 to-green/60 rounded-full" />
-          <div className="absolute left-[-65px] top-1/2 h-[2px] w-[65px] -translate-y-1/2 bg-gradient-to-l from-green via-green/80 to-green/60 rounded-full" />
+          <div className="absolute right-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
+          <div className="absolute left-[-58px] top-1/2 h-[2px] w-[50px] -translate-y-1/2 bg-green rounded-full" />
         </>
       )}
-
-      {/* Card content */}
 
       {/* Player 1 */}
       <motion.div
