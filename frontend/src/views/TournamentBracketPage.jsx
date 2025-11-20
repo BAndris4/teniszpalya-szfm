@@ -261,28 +261,6 @@ function TournamentBracketPage() {
                 </div>
               </motion.div>
 
-              {/* Round progress badges */}
-              <div className="flex flex-wrap gap-3 mb-6 justify-center">
-                {bracket.rounds.map(r => {
-                  const done = r.matches.every(m => m.status === 2);
-                  const active = r.round === activeRoundNumber && !isCompletedTournament;
-                  return (
-                    <div
-                      key={`progress-${r.round}`}
-                      className={`px-4 py-1 rounded-full text-xs font-semibold border tracking-wide transition-colors ${
-                        active
-                          ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
-                          : done
-                          ? 'bg-green/10 border-green/40 text-green-700'
-                          : 'bg-gray-100 border-gray-300 text-gray-600'
-                      }`}
-                    >
-                      {r.round + 1 < totalRounds ? `Round ${r.round + 1}` : 'Final'}
-                    </div>
-                  );
-                })}
-              </div>
-
               {/* Bracket */}
               <motion.div 
                 initial={{ opacity: 0, scale: 0.95 }}
