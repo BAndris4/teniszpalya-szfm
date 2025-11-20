@@ -166,27 +166,36 @@ function TournamentBracketPage() {
                 className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100"
               >
                 <div className="flex items-start overflow-x-auto pb-4">
-                  {bracket.rounds.map((round, idx) => (
-                    <div key={`round-wrapper-${round.round}`} style={{ marginRight: idx === bracket.rounds.length - 1 ? '46.5px' : idx === 0 ? '96px' : idx === 1 ? '96px' : '48px' }}>
-                      <RoundColumn
-                        key={`round-${round.round}`}
-                        round={round}
-                        roundIndex={idx}
-                        isFinal={idx === bracket.rounds.length - 1}
-                        side="left"
-                        isAdmin={isAdmin}
-                        savingId={savingId}
-                        onSubmitResult={submitResult}
-                        scores={scores}
-                        setScores={setScores}
-                        isActive={round.round === activeRoundNumber}
-                        marginTop={roundMarginTop[idx]}
-                        gapBetweenMatches={roundGapBetween[idx]}
-                        matchHeight={cardHeight}
-                        firstRoundMatches={firstRoundMatches}
-                      />
-                    </div>
-                  ))}
+                  {bracket.rounds.map((round, idx) => {
+                    const isLastBeforeFinal = idx === bracket.rounds.length - 2;
+                    const isFinalRound = idx === bracket.rounds.length - 1;
+                    let marginRight = '48px';
+                    if (idx === 0 || idx === 1) marginRight = '96px';
+                    if (isLastBeforeFinal) marginRight = '96px'; // Semifinals előtt mindig 96px
+                    if (isFinalRound) marginRight = '46.5px';
+                    
+                    return (
+                      <div key={`round-wrapper-${round.round}`} style={{ marginRight }}>
+                        <RoundColumn
+                          key={`round-${round.round}`}
+                          round={round}
+                          roundIndex={idx}
+                          isFinal={isFinalRound}
+                          side="left"
+                          isAdmin={isAdmin}
+                          savingId={savingId}
+                          onSubmitResult={submitResult}
+                          scores={scores}
+                          setScores={setScores}
+                          isActive={round.round === activeRoundNumber}
+                          marginTop={roundMarginTop[idx]}
+                          gapBetweenMatches={roundGapBetween[idx]}
+                          matchHeight={cardHeight}
+                          firstRoundMatches={firstRoundMatches}
+                        />
+                      </div>
+                    );
+                  })}
                   
                   {/* 3rd Place Match - jobb oldalt a Finals mellett */}
                   {thirdPlaceMatch && (
