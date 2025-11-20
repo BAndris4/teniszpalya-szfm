@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { useCurrentUser } from "../hooks/useCurrentUser";
 import Navbar from "../components/Navbar";
 import { ReserveMenuProvider } from "../contexts/ReserveMenuContext";
+import { backgroundPositions } from "../backgroundPositions";
 
 const API_BASE = "http://localhost:5044/api/tournaments";
 
@@ -17,6 +18,8 @@ function TournamentBracketPage() {
   const [error, setError] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [scores, setScores] = useState({});
+
+  const { topBlob, bottomBlob } = backgroundPositions.Hero;
 
   useEffect(() => {
     loadBracket();
@@ -148,7 +151,18 @@ function TournamentBracketPage() {
 
   return (
     <ReserveMenuProvider>
-      <div className="relative bg-white overflow-hidden min-h-screen">
+      <div className="relative bg-white overflow-hidden min-h-screen font-['Poppins',sans-serif]">
+      <motion.div
+        className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
+        animate={topBlob}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+      />
+
+      <motion.div
+        className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
+        animate={bottomBlob}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+      />
         <div className="relative z-10">
           <Navbar />
           <div className="pt-32 px-6 pb-12">
@@ -331,7 +345,7 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
                 style={{ 
                   top: 'calc(50% - 1.5px)',
                   width: '3px',
-                  height: `${gapBetweenMatches + matchHeight - 1.5}px`
+                  height: `${gapBetweenMatches + matchHeight + 1.5}px`
                 }}
               />
             )}

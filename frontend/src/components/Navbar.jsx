@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import ReserveMenu from "./ReserveMenu";
 import { useReserveMenu } from "../contexts/ReserveMenuContext";
 import { useCurrentUser } from "../hooks/useCurrentUser";
+import profilePic from "../assets/profile_pic.svg";
 
 function Navbar() {
 
@@ -47,9 +48,9 @@ function Navbar() {
                     {authenticated ? (
                         <div className="relative">
                             <img 
-                                src="src/assets/profile_pic.svg" 
-                                alt="" 
-                                className={`h-12 cursor-pointer hover:scale-110 active:scale-95 transition-all duration-700 hover:drop-shadow-lg ease-in-out${isLoaded ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 rotate-360'}`}
+                                src={profilePic}
+                                alt="Profile" 
+                                className={`h-12 cursor-pointer hover:scale-110 active:scale-95 transition-all duration-700 hover:drop-shadow-lg ease-in-out ${isLoaded ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-75 rotate-360'}`}
                                 onClick={() => setAccountDropdown(!accountDropdown)}
                             />
                             <AccountDropdown hidden={!accountDropdown} user={user}/>

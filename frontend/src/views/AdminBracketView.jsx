@@ -339,7 +339,7 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
                 style={{ 
                   top: 'calc(50% - 1.5px)',
                   width: '3px',
-                  height: `${gapBetweenMatches + matchHeight - 1.5}px`
+                  height: `${gapBetweenMatches + matchHeight + 1.5}px`
                 }}
               />
             )}
