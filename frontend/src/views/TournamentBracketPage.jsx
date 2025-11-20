@@ -37,7 +37,8 @@ function TournamentBracketPage() {
     }
   }
 
-  const isAdmin = user?.roleID === 2;
+  // Public bracket page should never allow editing results, even for admins.
+  const isAdmin = false;
 
   async function submitResult(match, winnerId) {
     try {
