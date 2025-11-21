@@ -1,4 +1,9 @@
 import { useNavigate } from "react-router-dom";
+import settingsIcon from "../assets/settings.svg";
+import historyIcon from "../assets/history.svg";
+import couponIcon from "../assets/coupon.svg";
+import adminIcon from "../assets/admin.svg";
+import logoutIcon from "../assets/logout.svg";
 
 function AccountDropdown({ hidden, user }) {
     const navigate = useNavigate();
@@ -29,7 +34,7 @@ function AccountDropdown({ hidden, user }) {
                 >
                     <span>Settings</span>
                     <img
-                        src="../src/assets/settings.svg"
+                        src={settingsIcon}
                         alt=""
                         className="group-hover:rotate-180 transition-transform duration-500"
                     />
@@ -42,7 +47,7 @@ function AccountDropdown({ hidden, user }) {
                 >
                     <span>History</span>
                     <img
-                        src="../src/assets/history.svg"
+                        src={historyIcon}
                         alt=""
                         className="group-hover:rotate-360 ease-in-out transition-transform duration-500"
                     />
@@ -55,7 +60,7 @@ function AccountDropdown({ hidden, user }) {
                 >
                     <span>Coupons</span>
                     <img
-                        src="../src/assets/coupon.svg"
+                        src={couponIcon}
                         alt=""
                         className="group-hover:-translate-y-[2px] transition-transform duration-300"
                     />
@@ -69,7 +74,7 @@ function AccountDropdown({ hidden, user }) {
                     >
                         <span>Admin</span>
                         <img
-                            src="../src/assets/admin.svg"
+                            src={adminIcon}
                             alt=""
                             className="group-hover:rotate-90 transition-transform duration-200"
                         />
@@ -83,7 +88,7 @@ function AccountDropdown({ hidden, user }) {
                 >
                     <span>Logout</span>
                     <img
-                        src="../src/assets/logout.svg"
+                        src={logoutIcon}
                         alt=""
                         className="group-hover:-translate-x-[2px] transition-transform duration-200"
                     />
