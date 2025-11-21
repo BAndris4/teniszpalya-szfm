@@ -32,11 +32,9 @@ function TournamentBracketPage() {
         fetch(`http://localhost:5044/api/tournaments/${id}/bracket`, { credentials: "include" }),
         fetch(`http://localhost:5044/api/tournaments/${id}`)
       ]);
-
       if (!brRes.ok) throw new Error(`Failed to load bracket: ${brRes.status}`);
       const brData = await brRes.json();
       setBracket(brData);
-
       if (tRes.ok) {
         const tData = await tRes.json();
         setTournament(tData);
@@ -180,120 +178,70 @@ function TournamentBracketPage() {
               transition={{ duration: 0.6 }}
               className="max-w-7xl mx-auto"
             >
-              {/* Header */}
+              {/* Tournament Info Header */}
               {tournament && (
                 <motion.div 
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
-                  className="mb-12 bg-white/80 backdrop-blur-xl rounded-3xl p-8 shadow-xl border border-white/50"
+                  className="mb-8 bg-white rounded-3xl p-6 shadow-xl border border-gray-100"
                 >
-                  <div className="flex flex-col md:flex-row items-start justify-between gap-8">
+                  <div className="mb-4">
+                    <button
+                      onClick={() => navigate("/tournaments")}
+                      className="flex items-center gap-2 text-dark-green hover:text-green transition-colors font-semibold"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                      </svg>
+                      Back to Tournaments
+                    </button>
+                  </div>
+                  <div className="flex items-start justify-between gap-6">
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="px-3 py-1 rounded-full bg-green/10 text-green text-xs font-bold uppercase tracking-wider">
-                          Tournament
-                        </span>
-                        {tournament.fee === 0 && (
-                          <span className="px-3 py-1 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider">
-                            Free Entry
-                          </span>
-                        )}
-                      </div>
-                      <h1 className="text-4xl md:text-5xl font-extrabold text-dark-green mb-4 leading-tight">
+                      <h1 className="text-3xl font-bold text-dark-green mb-2">
                         {tournament.title}
                       </h1>
                       {tournament.description && (
-                        <p className="text-lg text-dark-green-half max-w-3xl leading-relaxed mb-6">
+                        <p className="text-dark-green-half mb-4">
                           {tournament.description}
                         </p>
                       )}
-                      
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
-                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Date</p>
-                            <p className="text-sm font-bold text-gray-800">
-                              {new Date(tournament.startDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric' })}
-                            </p>
-                          </div>
+                      <div className="flex flex-wrap gap-3">
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
+                          <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm font-semibold text-dark-green">
+                            {new Date(tournament.startDate).toLocaleDateString("en-US", { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
                         </div>
-
                         {tournament.location && (
-                          <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
-                            <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                              </svg>
-                            </div>
-                            <div>
-                              <p className="text-xs text-gray-500 font-medium">Location</p>
-                              <p className="text-sm font-bold text-gray-800 truncate max-w-[120px]" title={tournament.location}>
-                                {tournament.location}
-                              </p>
-                            </div>
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
+                            <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-semibold text-dark-green">{tournament.location}</span>
                           </div>
                         )}
-
-                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
-                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Participants</p>
-                            <p className="text-sm font-bold text-gray-800">
-                              {tournament.currentParticipants} / {tournament.maxParticipants}
-                            </p>
-                          </div>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
+                          <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
+                          </svg>
+                          <span className="text-sm font-semibold text-dark-green">
+                            {tournament.currentParticipants} / {tournament.maxParticipants}
+                          </span>
                         </div>
-
-                        <div className="flex items-center gap-3 p-3 rounded-2xl bg-gray-50 border border-gray-100 hover:border-green/30 transition-colors group">
-                          <div className="w-10 h-10 rounded-xl bg-green/10 flex items-center justify-center text-green group-hover:bg-green group-hover:text-white transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                          </div>
-                          <div>
-                            <p className="text-xs text-gray-500 font-medium">Entry Fee</p>
-                            <p className="text-sm font-bold text-gray-800">
-                              {tournament.fee > 0 ? `${tournament.fee} Ft` : "Free"}
-                            </p>
-                          </div>
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
+                          <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
+                          </svg>
+                          <span className="text-sm font-semibold text-dark-green">
+                            {tournament.fee > 0 ? `${tournament.fee} Ft` : "Free"}
+                          </span>
                         </div>
                       </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 min-w-[140px]">
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate(`/tournaments/${id}`)}
-                        className="w-full px-6 py-3 rounded-xl bg-green text-white font-bold shadow-lg shadow-green/20 hover:shadow-green/40 transition-all flex items-center justify-center gap-2"
-                      >
-                        <span>Details</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => navigate("/tournaments")}
-                        className="w-full px-6 py-3 rounded-xl border-2 border-gray-200 text-gray-600 font-bold hover:border-green hover:text-green hover:bg-green/5 transition-all flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                        <span>Back</span>
-                      </motion.button>
                     </div>
                   </div>
                 </motion.div>
@@ -304,32 +252,9 @@ function TournamentBracketPage() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
-                className="bg-white/90 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-gray-100 relative overflow-hidden"
+                className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100"
               >
-                <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-green/40 via-green to-green/40" />
-                
-                <div className="flex items-center justify-between mb-8 border-b border-gray-100 pb-4">
-                  <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
-                    <span className="w-8 h-8 rounded-lg bg-green text-white flex items-center justify-center">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                      </svg>
-                    </span>
-                    Tournament Bracket
-                  </h2>
-                  <div className="flex gap-2">
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <span className="w-3 h-3 rounded-full bg-green"></span>
-                      <span>Winner</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-500 ml-4">
-                      <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-300"></span>
-                      <span>Pending</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-start overflow-x-auto pb-4 w-full custom-scrollbar">
+                <div className="flex items-start overflow-x-auto pb-4 w-full">
                   {bracket.rounds.length === 1 ? (
                     <div className="flex justify-center w-full">
                       <RoundColumn
@@ -467,7 +392,7 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
       transition={{ duration: 0.5, delay: roundIndex * 0.1 }}
     >
       <motion.h3 
-        className="mb-6 text-center text-xs font-extrabold text-gray-400 uppercase tracking-widest"
+        className="mb-6 text-center text-lg font-bold text-dark-green"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, delay: roundIndex * 0.1 + 0.2 }}
