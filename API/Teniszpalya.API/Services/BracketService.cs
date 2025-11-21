@@ -78,6 +78,9 @@ namespace Teniszpalya.API.Services
                 round++;
             }
             
+            // Propagate BYE winners to next rounds immediately
+            PropagateWinners(matches);
+            
             return matches;
         }
         
@@ -89,6 +92,77 @@ namespace Teniszpalya.API.Services
                 power *= 2;
             }
             return power;
+        }
+        
+        // Propagate winners from completed matches to next round slots
+        private void PropagateWinners(List<Match> matches)
+        {
+            bool hasChanges;
+            do
+            {
+                hasChanges = false;
+                var matchesByRound = matches
+                    .GroupBy(m => m.Round)
+                    .OrderBy(g => g.Key)
+                    .ToList();
+                
+                foreach (var roundGroup in matchesByRound)
+                {
+                    var currentRound = roundGroup.Key;
+                    var currentMatches = roundGroup.OrderBy(m => m.MatchNumber).ToList();
+                    var nextRoundMatches = matches
+                        .Where(m => m.Round == currentRound + 1)
+                        .OrderBy(m => m.MatchNumber)
+                        .ToList();
+                    
+                    if (!nextRoundMatches.Any()) continue;
+                    
+                    for (int i = 0; i < currentMatches.Count; i++)
+                    {
+                        var match = currentMatches[i];
+                        if (match.Status == MatchStatus.Completed && match.WinnerID.HasValue)
+                        {
+                            var nextMatchIndex = i / 2;
+                            if (nextMatchIndex < nextRoundMatches.Count)
+                            {
+                                var nextMatch = nextRoundMatches[nextMatchIndex];
+                                bool wasUpdated = false;
+                                
+                                // Use matchNumber to determine slot (odd -> player1, even -> player2)
+                                if (match.MatchNumber % 2 == 1 && nextMatch.Player1ID != match.WinnerID)
+                                {
+                                    nextMatch.Player1ID = match.WinnerID;
+                                    wasUpdated = true;
+                                }
+                                else if (match.MatchNumber % 2 == 0 && nextMatch.Player2ID != match.WinnerID)
+                                {
+                                    nextMatch.Player2ID = match.WinnerID;
+                                    wasUpdated = true;
+                                }
+                                
+                                // If next match now has a BYE scenario, auto-complete it too
+                                if (nextMatch.Status != MatchStatus.Completed)
+                                {
+                                    if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
+                                    {
+                                        nextMatch.WinnerID = nextMatch.Player2ID;
+                                        nextMatch.Status = MatchStatus.Completed;
+                                        wasUpdated = true;
+                                    }
+                                    else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
+                                    {
+                                        nextMatch.WinnerID = nextMatch.Player1ID;
+                                        nextMatch.Status = MatchStatus.Completed;
+                                        wasUpdated = true;
+                                    }
+                                }
+                                
+                                if (wasUpdated) hasChanges = true;
+                            }
+                        }
+                    }
+                }
+            } while (hasChanges);
         }
     }
 }

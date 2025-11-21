@@ -57,6 +57,13 @@ namespace Teniszpalya.API.Controllers
                 return Forbid();
             }
 
+            // Validate MaxParticipants - must be 2, 4, 8, or 16
+            if (tournament.MaxParticipants != 2 && tournament.MaxParticipants != 4 && 
+                tournament.MaxParticipants != 8 && tournament.MaxParticipants != 16)
+            {
+                return BadRequest(new { message = "MaxParticipants must be 2, 4, 8, or 16." });
+            }
+
             _context.Tournaments.Add(tournament);
             await _context.SaveChangesAsync();
             return Ok(tournament);
@@ -74,6 +81,13 @@ namespace Teniszpalya.API.Controllers
 
             var tournament = await _context.Tournaments.FindAsync(id);
             if (tournament == null) return NotFound(new { message = "Tournament not found." });
+
+            // Validate MaxParticipants - must be 2, 4, 8, or 16
+            if (updatedTournament.MaxParticipants != 2 && updatedTournament.MaxParticipants != 4 && 
+                updatedTournament.MaxParticipants != 8 && updatedTournament.MaxParticipants != 16)
+            {
+                return BadRequest(new { message = "MaxParticipants must be 2, 4, 8, or 16." });
+            }
 
             // Update fields
             tournament.Title = updatedTournament.Title;
@@ -400,6 +414,24 @@ namespace Teniszpalya.API.Controllers
                 {
                     nextMatch.Player2ID = request.WinnerId;
                 }
+                
+                // Auto-advance if next match now has a BYE scenario
+                if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
+                {
+                    nextMatch.WinnerID = nextMatch.Player2ID;
+                    nextMatch.Status = MatchStatus.Completed;
+                    
+                    // Recursively propagate this auto-advance
+                    await PropagateAutoAdvance(tournamentId, nextMatch);
+                }
+                else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
+                {
+                    nextMatch.WinnerID = nextMatch.Player1ID;
+                    nextMatch.Status = MatchStatus.Completed;
+                    
+                    // Recursively propagate this auto-advance
+                    await PropagateAutoAdvance(tournamentId, nextMatch);
+                }
             }
             else
             {
@@ -468,6 +500,43 @@ namespace Teniszpalya.API.Controllers
                 };
 
                 _context.Matches.Add(thirdPlaceMatch);
+            }
+        }
+        
+        private async Task PropagateAutoAdvance(int tournamentId, Match completedMatch)
+        {
+            var nextRound = completedMatch.Round + 1;
+            var nextMatchNumber = (completedMatch.MatchNumber + 1) / 2;
+
+            var nextMatch = await _context.Matches
+                .FirstOrDefaultAsync(m => m.TournamentID == tournamentId 
+                    && m.Round == nextRound 
+                    && m.MatchNumber == nextMatchNumber);
+
+            if (nextMatch != null && completedMatch.WinnerID.HasValue)
+            {
+                if (completedMatch.MatchNumber % 2 == 1)
+                {
+                    nextMatch.Player1ID = completedMatch.WinnerID;
+                }
+                else
+                {
+                    nextMatch.Player2ID = completedMatch.WinnerID;
+                }
+                
+                // Check for another BYE scenario
+                if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
+                {
+                    nextMatch.WinnerID = nextMatch.Player2ID;
+                    nextMatch.Status = MatchStatus.Completed;
+                    await PropagateAutoAdvance(tournamentId, nextMatch);
+                }
+                else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
+                {
+                    nextMatch.WinnerID = nextMatch.Player1ID;
+                    nextMatch.Status = MatchStatus.Completed;
+                    await PropagateAutoAdvance(tournamentId, nextMatch);
+                }
             }
         }
     }

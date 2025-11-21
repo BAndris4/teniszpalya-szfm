@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCurrentUser } from "../hooks/useCurrentUser";
@@ -34,6 +35,8 @@ function TournamentBracketPage() {
       ]);
       if (!brRes.ok) throw new Error(`Failed to load bracket: ${brRes.status}`);
       const brData = await brRes.json();
+      // Auto-advance players who have no opponent (BYE) before setting bracket
+      // Raw bracket from backend stored; display bracket will be derived via useMemo
       setBracket(brData);
       if (tRes.ok) {
         const tData = await tRes.json();
@@ -110,10 +113,17 @@ function TournamentBracketPage() {
     );
   }
 
-  const totalRounds = bracket.rounds?.length || 0;
-  const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
-  const thirdPlaceMatch = bracket.thirdPlaceMatch;
-  const champion = bracket.champion;
+  // Derived bracket with BYE auto-advances (does not mutate server state)
+  const displayBracket = useMemo(() => {
+    try {
+      return autoAdvanceByes(structuredClone(bracket));
+    } catch { return bracket; }
+  }, [bracket]);
+
+  const totalRounds = displayBracket.rounds?.length || 0;
+  const activeRoundNumber = displayBracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
+  const thirdPlaceMatch = displayBracket.thirdPlaceMatch;
+  const champion = displayBracket.champion;
 
   // Dynamic vertical positioning for any participant count (supports 8,16,... powers of 2)
   const cardHeight = 96;
@@ -255,10 +265,10 @@ function TournamentBracketPage() {
                 className="bg-white rounded-3xl p-8 shadow-xl border border-gray-100"
               >
                 <div className="flex items-start overflow-x-auto pb-4 w-full">
-                  {bracket.rounds.length === 1 ? (
+                  {displayBracket.rounds.length === 1 ? (
                     <div className="flex justify-center w-full">
                       <RoundColumn
-                        round={bracket.rounds[0]}
+                        round={displayBracket.rounds[0]}
                         roundIndex={0}
                         isFinal={true}
                         side="final"
@@ -267,7 +277,7 @@ function TournamentBracketPage() {
                         onSubmitResult={submitResult}
                         scores={scores}
                         setScores={setScores}
-                        isActive={bracket.rounds[0].round === activeRoundNumber}
+                        isActive={displayBracket.rounds[0].round === activeRoundNumber}
                         marginTop={roundMarginTop[0]}
                         gapBetweenMatches={roundGapBetween[0]}
                         matchHeight={cardHeight}
@@ -275,9 +285,9 @@ function TournamentBracketPage() {
                       />
                     </div>
                   ) : (
-                    bracket.rounds.map((round, idx) => {
-                      const isLastBeforeFinal = idx === bracket.rounds.length - 2;
-                      const isFinalRound = idx === bracket.rounds.length - 1;
+                    displayBracket.rounds.map((round, idx) => {
+                      const isLastBeforeFinal = idx === displayBracket.rounds.length - 2;
+                      const isFinalRound = idx === displayBracket.rounds.length - 1;
                       let marginRight = '48px';
                       if (idx === 0 || idx === 1) marginRight = '96px';
                       if (isLastBeforeFinal) marginRight = '96px';
@@ -442,8 +452,11 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
 }
 
 function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores }) {
-  const player1Name = match.player1?.name || "TBD";
-  const player2Name = match.player2?.name || "TBD";
+  const isPlaceholder = (p) => !p || p.name === 'TBD' || p.id === 0;
+  const isP1Placeholder = isPlaceholder(match.player1);
+  const isP2Placeholder = isPlaceholder(match.player2);
+  const player1Name = isP1Placeholder && !isP2Placeholder ? 'BYE' : (match.player1?.name || 'TBD');
+  const player2Name = isP2Placeholder && !isP1Placeholder ? 'BYE' : (match.player2?.name || 'TBD');
   const isCompleted = match.status === 2;
   const winner = match.winner;
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
@@ -576,5 +589,54 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   );
 }
 
+}
+// Automatically advances lone players (BYE) to the next round locally.
+// This is a frontend-only adjustment; backend persistence remains unchanged.
+function autoAdvanceByes(br) {
+  if (!br?.rounds || br.rounds.length < 2) return br;
+  for (let r = 0; r < br.rounds.length - 1; r++) {
+    const currentRound = br.rounds[r];
+    const nextRound = br.rounds[r + 1];
+    if (!currentRound?.matches || !nextRound?.matches) continue;
+    currentRound.matches.forEach((m, idx) => {
+      const isPlaceholder = (p) => !p || p.name === 'TBD' || p.id === 0;
+      const hasP1 = !!m.player1 && !isPlaceholder(m.player1);
+      const hasP2 = !!m.player2 && !isPlaceholder(m.player2);
+      // If exactly one player, auto-complete match and set winner
+      if (hasP1 !== hasP2) {
+        if (m.status !== 2) {
+          const winner = hasP1 ? m.player1 : m.player2;
+          m.winner = winner;
+          m.status = 2;
+        }
+        const winnerToPropagate = m.winner || (hasP1 ? m.player1 : m.player2);
+        if (winnerToPropagate) {
+          const targetIdx = Math.floor(idx / 2);
+          const targetMatch = nextRound.matches[targetIdx];
+          if (targetMatch) {
+            const isTargetP1Placeholder = !targetMatch.player1 || isPlaceholder(targetMatch.player1);
+            const isTargetP2Placeholder = !targetMatch.player2 || isPlaceholder(targetMatch.player2);
+            if (idx % 2 === 0) {
+              if (isTargetP1Placeholder) targetMatch.player1 = winnerToPropagate;
+            } else {
+              if (isTargetP2Placeholder) targetMatch.player2 = winnerToPropagate;
+            }
+          }
+        }
+      }
+    });
+  }
+  // If final match has only one player, optionally mark champion client-side
+  const finalRound = br.rounds[br.rounds.length - 1];
+  if (finalRound?.matches?.length === 1) {
+    const fm = finalRound.matches[0];
+    const lone = fm.player1 && !fm.player2 ? fm.player1 : (!fm.player1 && fm.player2 ? fm.player2 : null);
+    if (lone && fm.status !== 2) {
+      fm.winner = lone;
+      fm.status = 2;
+      br.champion = lone;
+    }
+  }
+  return br;
 }
 export default TournamentBracketPage;
