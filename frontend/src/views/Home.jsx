@@ -4,8 +4,6 @@ import Navbar from '../components/Navbar'
 import Hero from '../sections/Hero';
 import Courts from '../sections/Courts';
 import PriceList from '../sections/PriceList';
-import Contact from '../sections/Contact';
-import Footer from '../sections/Footer';
 
 import { backgroundPositions } from "../backgroundPositions";
 import useScrollSection from "../useScrollSection";
@@ -43,8 +41,6 @@ function Home() {
         <div id="Hero"><Hero /></div>
         <div id="Courts"><Courts /></div>
         <div id="PriceList"><PriceList /></div>
-        <div id="Contact"><Contact /></div>
-        <Footer />
       </ReserveMenuProvider>
     </div>
   );

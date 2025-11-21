@@ -34,7 +34,7 @@ function Hero() {
                         
                     <div className='flex flex-col justify-around my-[120px]'>
                         <div className='flex flex-col gap-[15px] mb-[20px]'>
-                            <div className={`text-[40px] font-bold text-dark-green leading-tight min-h-[120px] max-w-[500px] transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8'}`}>
+                            <div data-testid="typewriter" className={`text-[40px] font-bold text-dark-green leading-tight min-h-[120px] max-w-[500px] transition-all duration-700 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-8'}`}>
                                 {displayedText}
                                 {displayedText.length < fullText.length && (
                                     <span className="animate-pulse">|</span>
