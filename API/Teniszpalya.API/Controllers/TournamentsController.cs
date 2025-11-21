@@ -240,13 +240,23 @@ namespace Teniszpalya.API.Controllers
             if (tournament.Status != TournamentStatus.Upcoming)
                 return BadRequest(new { message = "Tournament has already started or completed" });
 
+            // Validate MaxParticipants - must be 2, 4, 8, or 16
+            if (tournament.MaxParticipants != 2 && tournament.MaxParticipants != 4 && 
+                tournament.MaxParticipants != 8 && tournament.MaxParticipants != 16)
+            {
+                return BadRequest(new { message = "Tournament can only be started with 2, 4, 8, or 16 participants capacity" });
+            }
+
             // Get registered participants
             var registrations = await _context.TournamentRegistrations
                 .Where(r => r.TournamentID == id)
                 .ToListAsync();
 
-            if (registrations.Count < 2)
-                return BadRequest(new { message = "At least 2 participants required to start tournament" });
+            // Tournament must be full to start
+            if (registrations.Count != tournament.MaxParticipants)
+            {
+                return BadRequest(new { message = $"Tournament must be full to start. Current: {registrations.Count}/{tournament.MaxParticipants}" });
+            }
 
             // Generate bracket
             var participantIds = registrations.Select(r => r.UserID).ToList();

@@ -509,19 +509,29 @@ export default function TournamentsTab() {
               <label className="text-xs font-medium text-dark-green">
                 Max Participants *
               </label>
-              <input
-                type="number"
-                min="2"
+              <select
                 required
                 value={form.maxParticipants}
                 onChange={(e) =>
                   setForm((f) => ({
                     ...f,
-                    maxParticipants: e.target.value,
+                    maxParticipants: parseInt(e.target.value),
                   }))
                 }
-                className="w-full rounded-xl border-2 border-dark-green-octa px-3 py-2 outline-none focus:ring-2 focus:ring-dark-green/30"
-              />
+                className="w-full rounded-xl border border-dark-green-octa px-3 py-2 outline-none focus:ring-2 focus:ring-dark-green/30 bg-white appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23164e3f' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5rem 1.5rem',
+                  paddingRight: '2.5rem'
+                }}
+              >
+                <option value={2}>2</option>
+                <option value={4}>4</option>
+                <option value={8}>8</option>
+                <option value={16}>16</option>
+              </select>
             </div>
 
             <div className="flex flex-col gap-2">
@@ -661,19 +671,29 @@ export default function TournamentsTab() {
               <label className="text-xs font-medium text-dark-green">
                 Max Participants *
               </label>
-              <input
-                type="number"
-                min="2"
+              <select
                 required
                 value={editForm.maxParticipants}
                 onChange={(e) =>
                   setEditForm((f) => ({
                     ...f,
-                    maxParticipants: e.target.value,
+                    maxParticipants: parseInt(e.target.value),
                   }))
                 }
-                className="w-full rounded-xl border-2 border-dark-green-octa px-3 py-2 outline-none focus:ring-2 focus:ring-dark-green/30"
-              />
+                className="w-full rounded-xl border border-dark-green-octa px-3 py-2 outline-none focus:ring-2 focus:ring-dark-green/30 bg-white appearance-none cursor-pointer"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23164e3f' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: 'right 0.5rem center',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: '1.5rem 1.5rem',
+                  paddingRight: '2.5rem'
+                }}
+              >
+                <option value={2}>2</option>
+                <option value={4}>4</option>
+                <option value={8}>8</option>
+                <option value={16}>16</option>
+              </select>
             </div>
 
             <div className="flex flex-col gap-2">
