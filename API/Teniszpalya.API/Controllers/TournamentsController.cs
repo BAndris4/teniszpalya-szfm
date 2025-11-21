@@ -424,24 +424,6 @@ namespace Teniszpalya.API.Controllers
                 {
                     nextMatch.Player2ID = request.WinnerId;
                 }
-                
-                // Auto-advance if next match now has a BYE scenario
-                if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
-                {
-                    nextMatch.WinnerID = nextMatch.Player2ID;
-                    nextMatch.Status = MatchStatus.Completed;
-                    
-                    // Recursively propagate this auto-advance
-                    await PropagateAutoAdvance(tournamentId, nextMatch);
-                }
-                else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
-                {
-                    nextMatch.WinnerID = nextMatch.Player1ID;
-                    nextMatch.Status = MatchStatus.Completed;
-                    
-                    // Recursively propagate this auto-advance
-                    await PropagateAutoAdvance(tournamentId, nextMatch);
-                }
             }
             else
             {
@@ -510,43 +492,6 @@ namespace Teniszpalya.API.Controllers
                 };
 
                 _context.Matches.Add(thirdPlaceMatch);
-            }
-        }
-        
-        private async Task PropagateAutoAdvance(int tournamentId, Match completedMatch)
-        {
-            var nextRound = completedMatch.Round + 1;
-            var nextMatchNumber = (completedMatch.MatchNumber + 1) / 2;
-
-            var nextMatch = await _context.Matches
-                .FirstOrDefaultAsync(m => m.TournamentID == tournamentId 
-                    && m.Round == nextRound 
-                    && m.MatchNumber == nextMatchNumber);
-
-            if (nextMatch != null && completedMatch.WinnerID.HasValue)
-            {
-                if (completedMatch.MatchNumber % 2 == 1)
-                {
-                    nextMatch.Player1ID = completedMatch.WinnerID;
-                }
-                else
-                {
-                    nextMatch.Player2ID = completedMatch.WinnerID;
-                }
-                
-                // Check for another BYE scenario
-                if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
-                {
-                    nextMatch.WinnerID = nextMatch.Player2ID;
-                    nextMatch.Status = MatchStatus.Completed;
-                    await PropagateAutoAdvance(tournamentId, nextMatch);
-                }
-                else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
-                {
-                    nextMatch.WinnerID = nextMatch.Player1ID;
-                    nextMatch.Status = MatchStatus.Completed;
-                    await PropagateAutoAdvance(tournamentId, nextMatch);
-                }
             }
         }
     }

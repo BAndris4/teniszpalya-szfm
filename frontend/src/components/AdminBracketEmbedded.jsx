@@ -14,6 +14,7 @@ export default function AdminBracketEmbedded({ tournamentId, onClose }) {
   const [error, setError] = useState(null);
   const [savingId, setSavingId] = useState(null);
   const [scores, setScores] = useState({});
+  const [selectedMatch, setSelectedMatch] = useState(null);
 
   useEffect(() => {
     if (!tournamentId) return;
@@ -93,20 +94,76 @@ export default function AdminBracketEmbedded({ tournamentId, onClose }) {
       )}
 
       {!loading && !error && bracket && bracket.rounds && bracket.rounds.length > 0 && (
-        <BracketContent
-          bracket={bracket}
-          isAdmin={isAdmin}
-          savingId={savingId}
-          submitResult={submitResult}
-          scores={scores}
-          setScores={setScores}
-        />
+        <>
+          <BracketContent
+            bracket={bracket}
+            isAdmin={isAdmin}
+            savingId={savingId}
+            submitResult={submitResult}
+            scores={scores}
+            setScores={setScores}
+            selectedMatch={selectedMatch}
+            setSelectedMatch={setSelectedMatch}
+          />
+          
+          {isAdmin && selectedMatch && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-8 rounded-xl border-2 border-slate-300 bg-slate-50 p-6"
+            >
+              <div className="mb-4">
+                <h4 className="text-lg font-bold text-slate-800">Set Match Result</h4>
+                <p className="text-sm text-slate-600 mt-1">
+                  {selectedMatch.player1?.name || "TBD"} vs {selectedMatch.player2?.name || "TBD"}
+                </p>
+              </div>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  placeholder="Score (e.g. 6-4, 6-3)"
+                  className="w-full rounded-lg border-2 border-slate-300 px-4 py-3 text-sm focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
+                  value={scores[selectedMatch.id] || ''}
+                  onChange={(e) => setScores(s => ({ ...s, [selectedMatch.id]: e.target.value }))}
+                />
+                <div className="flex gap-3">
+                  <button
+                    className="flex-1 rounded-lg bg-slate-800 px-4 py-3 text-sm font-bold text-white disabled:opacity-50 hover:bg-slate-700 transition"
+                    disabled={savingId === selectedMatch.id}
+                    onClick={() => {
+                      submitResult(selectedMatch, selectedMatch.player1.id);
+                      setSelectedMatch(null);
+                    }}
+                  >
+                    {savingId === selectedMatch.id ? 'Saving…' : `${selectedMatch.player1?.name || "P1"} Wins`}
+                  </button>
+                  <button
+                    className="flex-1 rounded-lg bg-slate-600 px-4 py-3 text-sm font-bold text-white disabled:opacity-50 hover:bg-slate-500 transition"
+                    disabled={savingId === selectedMatch.id}
+                    onClick={() => {
+                      submitResult(selectedMatch, selectedMatch.player2.id);
+                      setSelectedMatch(null);
+                    }}
+                  >
+                    {savingId === selectedMatch.id ? 'Saving…' : `${selectedMatch.player2?.name || "P2"} Wins`}
+                  </button>
+                  <button
+                    className="rounded-lg border-2 border-slate-300 px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-100 transition"
+                    onClick={() => setSelectedMatch(null)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </>
       )}
     </motion.div>
   );
 }
 
-function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setScores }) {
+function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setScores, selectedMatch, setSelectedMatch }) {
   const activeRoundNumber = bracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
   const thirdPlaceMatch = bracket.thirdPlaceMatch;
   const champion = bracket.champion;
@@ -162,6 +219,8 @@ function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setS
               onSubmitResult={submitResult}
               scores={scores}
               setScores={setScores}
+              selectedMatch={selectedMatch}
+              setSelectedMatch={setSelectedMatch}
               isActive={bracket.rounds[0].round === activeRoundNumber}
               marginTop={roundMarginTop[0]}
               gapBetweenMatches={roundGapBetween[0]}
@@ -190,6 +249,8 @@ function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setS
                   onSubmitResult={submitResult}
                   scores={scores}
                   setScores={setScores}
+                  selectedMatch={selectedMatch}
+                  setSelectedMatch={setSelectedMatch}
                   isActive={round.round === activeRoundNumber}
                   marginTop={roundMarginTop[idx]}
                   gapBetweenMatches={roundGapBetween[idx]}
@@ -213,6 +274,8 @@ function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setS
                 onSubmitResult={submitResult}
                 scores={scores}
                 setScores={setScores}
+                selectedMatch={selectedMatch}
+                setSelectedMatch={setSelectedMatch}
               />
             </div>
           </div>
@@ -244,7 +307,7 @@ function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setS
   );
 }
 
-function RoundColumn({ round, roundIndex, isFinal, side, isAdmin, savingId, onSubmitResult, scores, setScores, isActive, marginTop, gapBetweenMatches, matchHeight, firstRoundMatches }) {
+function RoundColumn({ round, roundIndex, isFinal, side, isAdmin, savingId, onSubmitResult, scores, setScores, selectedMatch, setSelectedMatch, isActive, marginTop, gapBetweenMatches, matchHeight, firstRoundMatches }) {
   const baseNames = firstRoundMatches === 8
     ? ["Round of 16", "Quarterfinals", "Semifinals", "Finals"]
     : ["Round 1", "Quarterfinals", "Semifinals", "Finals"];
@@ -281,6 +344,8 @@ function RoundColumn({ round, roundIndex, isFinal, side, isAdmin, savingId, onSu
               onSubmitResult={onSubmitResult}
               scores={scores}
               setScores={setScores}
+              selectedMatch={selectedMatch}
+              setSelectedMatch={setSelectedMatch}
               isActiveRound={isActive}
             />
           </div>
@@ -290,18 +355,23 @@ function RoundColumn({ round, roundIndex, isFinal, side, isAdmin, savingId, onSu
   );
 }
 
-function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores }) {
+function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, setScores, selectedMatch, setSelectedMatch }) {
   const player1Name = match.player1?.name || "TBD";
   const player2Name = match.player2?.name || "TBD";
   const isCompleted = match.status === 2;
   const winner = match.winner;
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
+  const isSelected = selectedMatch?.id === match.id;
+  
   return (
     <motion.div
-      className="relative w-56 rounded-xl border-2 border-slate-300 bg-white shadow-sm transition-all"
+      className={`relative w-56 rounded-xl border-2 bg-white shadow-sm transition-all ${
+        isSelected ? 'border-slate-600 ring-2 ring-slate-400/30' : 'border-slate-300'
+      } ${canSet ? 'cursor-pointer hover:border-slate-500' : ''}`}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.25 }}
+      onClick={() => canSet && setSelectedMatch(match)}
     >
       <div
         className={`border-b border-slate-200 px-4 py-3 flex items-center justify-between text-sm ${isCompleted && winner?.id === match.player1?.id ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'}`}
@@ -319,33 +389,6 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
           <span className="text-xs font-semibold text-slate-600">{match.score.split('-')[1] || ''}</span>
         )}
       </div>
-      {canSet && (
-        <div className="space-y-2 border-t border-slate-200 p-3 bg-slate-50">
-          <input
-            type="text"
-            placeholder="Score (e.g. 6-4, 6-3)"
-            className="w-full rounded-lg border-2 border-slate-300 px-3 py-2 text-xs focus:border-slate-600 focus:outline-none focus:ring-2 focus:ring-slate-400/20"
-            value={scores[match.id] || ''}
-            onChange={(e) => setScores(s => ({ ...s, [match.id]: e.target.value }))}
-          />
-          <div className="flex gap-2">
-            <button
-              className="flex-1 rounded-lg bg-slate-800 px-3 py-2 text-xs font-bold text-white disabled:opacity-50 hover:bg-slate-700"
-              disabled={savingId === match.id}
-              onClick={() => onSubmitResult(match, match.player1.id)}
-            >
-              {savingId === match.id ? 'Saving…' : 'P1 wins'}
-            </button>
-            <button
-              className="flex-1 rounded-lg bg-slate-600 px-3 py-2 text-xs font-bold text-white disabled:opacity-50 hover:bg-slate-500"
-              disabled={savingId === match.id}
-              onClick={() => onSubmitResult(match, match.player2.id)}
-            >
-              {savingId === match.id ? 'Saving…' : 'P2 wins'}
-            </button>
-          </div>
-        </div>
-      )}
     </motion.div>
   );
 }

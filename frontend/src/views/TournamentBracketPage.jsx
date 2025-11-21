@@ -27,6 +27,14 @@ function TournamentBracketPage() {
     loadData();
   }, [id]);
 
+  // Derived bracket with BYE auto-advances (does not mutate server state)
+  const displayBracket = useMemo(() => {
+    if (!bracket) return null;
+    try {
+      return autoAdvanceByes(structuredClone(bracket));
+    } catch { return bracket; }
+  }, [bracket]);
+
   async function loadData() {
     try {
       const [brRes, tRes] = await Promise.all([
@@ -113,22 +121,15 @@ function TournamentBracketPage() {
     );
   }
 
-  // Derived bracket with BYE auto-advances (does not mutate server state)
-  const displayBracket = useMemo(() => {
-    try {
-      return autoAdvanceByes(structuredClone(bracket));
-    } catch { return bracket; }
-  }, [bracket]);
-
-  const totalRounds = displayBracket.rounds?.length || 0;
-  const activeRoundNumber = displayBracket.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
-  const thirdPlaceMatch = displayBracket.thirdPlaceMatch;
-  const champion = displayBracket.champion;
+  const totalRounds = displayBracket?.rounds?.length || 0;
+  const activeRoundNumber = displayBracket?.rounds.find(r => r.matches.some(m => m.status !== 2))?.round ?? null;
+  const thirdPlaceMatch = displayBracket?.thirdPlaceMatch;
+  const champion = displayBracket?.champion;
 
   // Dynamic vertical positioning for any participant count (supports 8,16,... powers of 2)
   const cardHeight = 96;
   const baseGap = 32;
-  const firstRoundMatches = bracket.rounds[0]?.matches.length || 0; // e.g. 4 (8 players) or 8 (16 players)
+  const firstRoundMatches = displayBracket?.rounds[0]?.matches.length || 0; // e.g. 4 (8 players) or 8 (16 players)
 
   // Precompute top positions per round
   const roundTopPositions = [];
@@ -144,10 +145,10 @@ function TournamentBracketPage() {
     roundGapBetween.push(baseGap);
   }
 
-  for (let r = 1; r < bracket.rounds.length; r++) {
+  for (let r = 1; r < (displayBracket?.rounds?.length || 0); r++) {
     const prevTops = roundTopPositions[r - 1];
     const prevCenters = prevTops.map(t => t + cardHeight / 2);
-    const matchCount = bracket.rounds[r].matches.length;
+    const matchCount = displayBracket.rounds[r].matches.length;
     const tops = [];
     for (let i = 0; i < matchCount; i++) {
       const c1 = prevCenters[i * 2];
@@ -385,7 +386,7 @@ function TournamentBracketPage() {
       </div>
     </ReserveMenuProvider>
   );
-
+}
 
 function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savingId, onSubmitResult, scores, setScores, isActive, marginTop, gapBetweenMatches, matchHeight, firstRoundMatches }) {
   // Round name logic adapts for 16-player first round
@@ -589,7 +590,6 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   );
 }
 
-}
 // Automatically advances lone players (BYE) to the next round locally.
 // This is a frontend-only adjustment; backend persistence remains unchanged.
 function autoAdvanceByes(br) {

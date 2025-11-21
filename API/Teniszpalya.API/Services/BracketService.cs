@@ -140,23 +140,6 @@ namespace Teniszpalya.API.Services
                                     wasUpdated = true;
                                 }
                                 
-                                // If next match now has a BYE scenario, auto-complete it too
-                                if (nextMatch.Status != MatchStatus.Completed)
-                                {
-                                    if (nextMatch.Player1ID == null && nextMatch.Player2ID.HasValue)
-                                    {
-                                        nextMatch.WinnerID = nextMatch.Player2ID;
-                                        nextMatch.Status = MatchStatus.Completed;
-                                        wasUpdated = true;
-                                    }
-                                    else if (nextMatch.Player2ID == null && nextMatch.Player1ID.HasValue)
-                                    {
-                                        nextMatch.WinnerID = nextMatch.Player1ID;
-                                        nextMatch.Status = MatchStatus.Completed;
-                                        wasUpdated = true;
-                                    }
-                                }
-                                
                                 if (wasUpdated) hasChanges = true;
                             }
                         }
