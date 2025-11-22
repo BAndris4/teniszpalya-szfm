@@ -365,7 +365,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   
   return (
     <motion.div
-      className={`relative w-56 rounded-xl border-2 bg-white shadow-sm transition-all ${
+      className={`relative w-56 rounded-xl border-2 bg-white shadow-sm transition-all overflow-hidden ${
         isSelected ? 'border-slate-600 ring-2 ring-slate-400/30' : 'border-slate-300'
       } ${canSet ? 'cursor-pointer hover:border-slate-500' : ''}`}
       initial={{ opacity: 0, scale: 0.95 }}
