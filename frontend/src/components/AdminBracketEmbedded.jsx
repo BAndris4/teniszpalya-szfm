@@ -264,8 +264,8 @@ function BracketContent({ bracket, isAdmin, savingId, submitResult, scores, setS
 
         {thirdPlaceMatch && (
           <div className="ml-12 flex flex-col">
-            <h3 className="mb-6 text-center text-sm font-bold text-slate-700">3rd Place</h3>
-            <div className="mt-12">
+            <h3 className="mb-3 text-center text-sm font-bold text-slate-700">3rd Place</h3>
+            <div>
               <MatchCard
                 match={thirdPlaceMatch}
                 side="final"
