@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Teniszpalya.API.Data;
 using Teniszpalya.API.Models;
+using Teniszpalya.API.Services;
 
 namespace Teniszpalya.API;
 
@@ -32,6 +33,9 @@ public class Program
         builder.Services.AddDbContext<AppDBContext>(options =>
         options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
         builder.Services.AddControllers();
+        
+        // Register services
+        builder.Services.AddScoped<BracketService>();
 
 #pragma warning disable CS8604 // Possible null reference argument.
         var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]);
@@ -110,27 +114,34 @@ public class Program
         // Seed Users
         if (!context.Users.Any())
         {
-            var adminUser = new User
+            var users = new List<User>
             {
-                FirstName = "admin",
-                LastName = "admin",
-                Email = "admin@admin.com",
-                PhoneNumber = "+36301234567",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
-                RoleID = 2 // Admin role
+                new User
+                {
+                    FirstName = "Admin",
+                    LastName = "User",
+                    Email = "admin@admin.com",
+                    PhoneNumber = "+36301234567",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+                    RoleID = 2 // Admin role
+                }
             };
 
-            var regularUser = new User
+            // Add test users
+            for (int i = 1; i <= 10; i++)
             {
-                FirstName = "user",
-                LastName = "user",
-                Email = "user@user.com",
-                PhoneNumber = "+36307654321",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("user"),
-                RoleID = 1 // Regular user role
-            };
+                users.Add(new User
+                {
+                    FirstName = $"User{i}",
+                    LastName = $"Test{i}",
+                    Email = $"user{i}@example.com",
+                    PhoneNumber = $"+36301234{i:D3}",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword($"user{i}"),
+                    RoleID = 1 // Regular user role
+                });
+            }
 
-            context.Users.AddRange(adminUser, regularUser);
+            context.Users.AddRange(users);
             context.SaveChanges();
         }
 
@@ -140,7 +151,7 @@ public class Program
             var courts = new[]
             {
                 new Court { Material = "Clay", Outdoors = true },
-                new Court { Material = "Hard", Outdoors = false },
+                new Court { Material = "Hard", Outdoors = true },
                 new Court { Material = "Grass", Outdoors = true },
                 new Court { Material = "Hard", Outdoors = false }
             };

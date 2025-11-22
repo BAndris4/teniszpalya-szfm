@@ -192,28 +192,37 @@ function Tournaments() {
                 />
                 <p className="mt-4 text-dark-green-half text-lg">Loading tournaments...</p>
               </motion.div>
-            ) : tournaments.length === 0 ? (
-              <motion.div 
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5 }}
-                className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-green-100"
-              >
-                <motion.svg 
-                  className="w-24 h-24 mx-auto mb-6 text-dark-green-half"
-                  animate={floatingAnimation}
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+            ) : (() => {
+              const filteredTournaments = tournaments.filter(t => {
+                // Show Upcoming tournaments to everyone
+                if (t.status === 0) return true;
+                // Show InProgress/Completed only to participants
+                if (!user) return false;
+                return t.registeredUserIds?.includes(user.id);
+              });
+              
+              return filteredTournaments.length === 0 ? (
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.5 }}
+                  className="text-center py-20 bg-white/80 backdrop-blur-sm rounded-3xl shadow-2xl border border-green-100"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
-                </motion.svg>
-                <p className="text-2xl font-semibold text-dark-green">No tournaments available yet.</p>
-                <p className="text-base text-dark-green-half mt-2">Check back later for upcoming competitions!</p>
-              </motion.div>
-            ) : (
-              <div className="grid gap-6 md:grid-cols-2">
-                {tournaments.map((t, idx) => (
+                  <motion.svg 
+                    className="w-24 h-24 mx-auto mb-6 text-dark-green-half"
+                    animate={floatingAnimation}
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
+                  </motion.svg>
+                  <p className="text-2xl font-semibold text-dark-green">No tournaments available yet.</p>
+                  <p className="text-base text-dark-green-half mt-2">Check back later for upcoming competitions!</p>
+                </motion.div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2">
+                  {filteredTournaments.map((t, idx) => (
                   <motion.div
                     key={t.id}
                     initial={{ opacity: 0, y: 20 }}
@@ -221,7 +230,14 @@ function Tournaments() {
                     transition={{ duration: 0.3, delay: idx * 0.05 }}
                     className="relative p-6 bg-white rounded-3xl shadow-xl border border-green-100 hover:shadow-2xl hover:border-green-200 transition-all duration-300 overflow-hidden group cursor-pointer"
                     whileHover={{ y: -4 }}
-                    onClick={() => navigate(`/tournaments/${t.id}`)}
+                    onClick={() => {
+                      // If tournament is InProgress or Completed, show bracket page
+                      if (t.status === 1 || t.status === 2) {
+                        navigate(`/tournaments/${t.id}/bracket`);
+                      } else {
+                        navigate(`/tournaments/${t.id}`);
+                      }
+                    }}
                   >
                     {/* Decorative animated elements */}
                     <motion.div 
@@ -251,7 +267,7 @@ function Tournaments() {
                         <div className={`px-4 py-2 rounded-full text-sm font-bold shadow-lg transition-transform hover:scale-105 ${
                           isTournamentFull(t) 
                             ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
-                            : 'bg-gradient-to-r from-green to-dark-green text-white'
+                            : 'bg-green text-white'
                         }`}>
                           {t.currentParticipants}/{t.maxParticipants}
                         </div>
@@ -281,7 +297,7 @@ function Tournaments() {
                         </div>
                       </div>
 
-                      <div className="flex justify-end items-center gap-2 text-green font-medium text-sm group-hover:text-dark-green transition-colors">
+                      <div className="flex justify-end items-center gap-2 text-green font-medium text-sm group-hover:text-green transition-colors">
                         View Details
                         <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="currentColor" viewBox="0 0 20 20">
                           <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -289,134 +305,11 @@ function Tournaments() {
                       </div>
                     </div>
                   </motion.div>
-                ))}
-              </div>
-            )}
-
-            {/* Admin create form */}
-            {user && user.roleID === 2 && (
-              <motion.div 
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.3 }}
-                className="mt-12 p-8 bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl border-2 border-green-200 relative overflow-hidden"
-              >
-                {/* Animated background accent */}
-                <motion.div 
-                  className="absolute top-0 left-0 w-2 h-full bg-gradient-to-b from-green via-dark-green to-green"
-                  animate={{ scaleY: [1, 1.05, 1] }}
-                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                />
-                
-                <div className="flex items-center gap-3 mb-6 relative">
-                  <motion.svg 
-                    className="w-10 h-10 text-dark-green"
-                    animate={{ rotate: [0, 5, -5, 0] }}
-                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                    fill="currentColor" 
-                    viewBox="0 0 20 20"
-                  >
-                    <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
-                  </motion.svg>
-                  <h2 className="text-3xl font-bold text-dark-green">Create Tournament</h2>
+                  ))}
                 </div>
-                <form onSubmit={handleCreate} className="flex flex-col gap-5">
-                  <div>
-                    <label className="block text-sm font-medium text-dark-green mb-2">Tournament Name *</label>
-                    <input 
-                      required
-                      value={form.title} 
-                      onChange={e => setForm({...form, title: e.target.value})} 
-                      placeholder="e.g. Summer Tennis Cup" 
-                      className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent transition-all" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-dark-green mb-2">Date & Time *</label>
-                    <input 
-                      required
-                      type="datetime-local"
-                      value={form.startDate} 
-                      onChange={e => setForm({...form, startDate: e.target.value})} 
-                      className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent transition-all" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-dark-green mb-2">Location</label>
-                    <input 
-                      value={form.location} 
-                      onChange={e => setForm({...form, location: e.target.value})} 
-                      placeholder="e.g. Budapest, Margaret Island" 
-                      className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent transition-all" 
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-dark-green mb-2">Description</label>
-                    <textarea 
-                      value={form.description} 
-                      onChange={e => setForm({...form, description: e.target.value})} 
-                      placeholder="Provide tournament details..." 
-                      rows={4}
-                      className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent resize-none transition-all" 
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-5">
-                    <div>
-                      <label className="block text-sm font-medium text-dark-green mb-2">Max Participants *</label>
-                      <input 
-                        type="number" 
-                        min="2"
-                        required
-                        value={form.maxParticipants} 
-                        onChange={e => setForm({...form, maxParticipants: e.target.value})} 
-                        placeholder="16"
-                        className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent transition-all" 
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-dark-green mb-2">Entry Fee (HUF)</label>
-                      <input 
-                        type="number" 
-                        min="0"
-                        value={form.fee} 
-                        onChange={e => setForm({...form, fee: e.target.value})} 
-                        placeholder="0"
-                        className="w-full p-4 border-2 border-green-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green focus:border-transparent transition-all" 
-                      />
-                    </div>
-                  </div>
-                  
-                  <motion.button 
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    type="submit" 
-                    disabled={creating} 
-                    className="mt-3 px-8 py-4 bg-gradient-to-r from-dark-green to-green text-white text-lg font-bold rounded-xl hover:shadow-2xl transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-3"
-                  >
-                    {creating ? (
-                      <>
-                        <svg className="animate-spin h-6 w-6" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Creating...
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
-                        </svg>
-                        Create Tournament
-                      </>
-                    )}
-                  </motion.button>
-                </form>
-              </motion.div>
-            )}
+              );
+            })()}
+
           </motion.div>
         </div>
       </div>

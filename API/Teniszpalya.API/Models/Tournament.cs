@@ -12,5 +12,13 @@ namespace Teniszpalya.API.Models
         public string? Location { get; set; }
         public int MaxParticipants { get; set; }
         public decimal? Fee { get; set; }
+        public TournamentStatus Status { get; set; } = TournamentStatus.Upcoming;
+    }
+    
+    public enum TournamentStatus
+    {
+        Upcoming = 0,
+        InProgress = 1,
+        Completed = 2
     }
 }
