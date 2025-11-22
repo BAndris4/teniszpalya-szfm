@@ -462,20 +462,29 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   const winner = match.winner;
   const canSet = isAdmin && !isCompleted && match.player1 && match.player2;
 
+  const topWinner = isCompleted && winner?.id === match.player1?.id;
+  const bottomWinner = isCompleted && winner?.id === match.player2?.id;
+
   return (
     <motion.div 
-      className="relative w-56 h-24 rounded-xl border-2 border-gray-200 bg-white shadow-md transition-all group flex flex-col justify-center"
+      className="relative w-56 h-24 rounded-xl border-2 border-gray-200 bg-white shadow-md transition-all group flex flex-col justify-center overflow-hidden"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
     >
 
+      {/* overlays use the exact Tailwind color `bg-green/10` so the green shade is unchanged */}
+      {topWinner && (
+        <div className="absolute inset-x-0 top-0 h-1/2 bg-green/10 rounded-t-xl pointer-events-none" />
+      )}
+      {bottomWinner && (
+        <div className="absolute inset-x-0 bottom-0 h-1/2 bg-green/10 rounded-b-xl pointer-events-none" />
+      )}
+
       {/* Player 1 */}
       <motion.div
         className={`border-b border-gray-100 px-4 py-3 transition-all relative flex items-center justify-between ${
-          isCompleted && winner?.id === match.player1?.id
-            ? "bg-green/10 font-bold text-dark-green"
-            : "text-gray-700 hover:bg-gray-50"
+          topWinner ? "font-bold text-dark-green" : "text-gray-700 hover:bg-gray-50"
         }`}
         initial={{ x: -10, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
@@ -504,9 +513,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
       {/* Player 2 */}
       <motion.div
         className={`px-4 py-3 transition-all relative flex items-center justify-between ${
-          isCompleted && winner?.id === match.player2?.id
-            ? "bg-green/10 font-bold text-dark-green"
-            : "text-gray-700 hover:bg-gray-50"
+          bottomWinner ? "font-bold text-dark-green" : "text-gray-700 hover:bg-gray-50"
         }`}
         initial={{ x: -10, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}

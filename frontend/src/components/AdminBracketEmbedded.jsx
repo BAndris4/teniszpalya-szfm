@@ -374,19 +374,43 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
       onClick={() => canSet && setSelectedMatch(match)}
     >
       <div
-        className={`border-b border-slate-200 px-4 py-3 flex items-center justify-between text-sm ${isCompleted && winner?.id === match.player1?.id ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'}`}
+        className={`border-b border-slate-200 px-4 py-3 flex items-center justify-between text-sm ${
+          isCompleted && winner?.id === match.player1?.id
+            ? 'bg-green-50 font-bold text-green-700 rounded-t-xl'
+            : 'text-slate-700'
+        }`}
       >
-        <span>{player1Name}</span>
+        <span className="flex items-center gap-2">
+          {isCompleted && winner?.id === match.player1?.id && (
+            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <circle cx="10" cy="10" r="10" fill="#22c55e" opacity="0.15" />
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+          {player1Name}
+        </span>
         {match.score && isCompleted && (
-          <span className="text-xs font-semibold text-slate-600">{match.score.split('-')[0] || match.score}</span>
+          <span className="text-xs font-semibold text-green-700">{match.score.split('-')[0] || match.score}</span>
         )}
       </div>
       <div
-        className={`px-4 py-3 flex items-center justify-between text-sm ${isCompleted && winner?.id === match.player2?.id ? 'bg-slate-100 font-semibold text-slate-900' : 'text-slate-700'}`}
+        className={`px-4 py-3 flex items-center justify-between text-sm ${
+          isCompleted && winner?.id === match.player2?.id
+            ? 'bg-green-50 font-bold text-green-700 rounded-b-xl'
+            : 'text-slate-700'
+        }`}
       >
-        <span>{player2Name}</span>
+        <span className="flex items-center gap-2">
+          {isCompleted && winner?.id === match.player2?.id && (
+            <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+              <circle cx="10" cy="10" r="10" fill="#22c55e" opacity="0.15" />
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          )}
+          {player2Name}
+        </span>
         {match.score && isCompleted && (
-          <span className="text-xs font-semibold text-slate-600">{match.score.split('-')[1] || ''}</span>
+          <span className="text-xs font-semibold text-green-700">{match.score.split('-')[1] || ''}</span>
         )}
       </div>
     </motion.div>
