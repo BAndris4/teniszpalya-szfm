@@ -252,10 +252,10 @@ namespace Teniszpalya.API.Controllers
                 .Where(r => r.TournamentID == id)
                 .ToListAsync();
 
-            // Tournament must be full to start
-            if (registrations.Count != tournament.MaxParticipants)
+            // Tournament must have at least 2 participants to start
+            if (registrations.Count < 2)
             {
-                return BadRequest(new { message = $"Tournament must be full to start. Current: {registrations.Count}/{tournament.MaxParticipants}" });
+                return BadRequest(new { message = $"Tournament must have at least 2 participants to start. Current: {registrations.Count}" });
             }
 
             // Generate bracket
@@ -472,7 +472,7 @@ namespace Teniszpalya.API.Controllers
                 .Select(id => id!.Value)
                 .ToList();
 
-            if (losers.Count != 2) return;
+            if (losers.Count == 0) return;
 
             // Check if 3rd place match already exists
             var existingThirdPlace = await _context.Matches
@@ -487,8 +487,9 @@ namespace Teniszpalya.API.Controllers
                     Round = -1, // Special round number for 3rd place
                     MatchNumber = 999,
                     Player1ID = losers[0],
-                    Player2ID = losers[1],
-                    Status = MatchStatus.Pending
+                    Player2ID = losers.Count > 1 ? losers[1] : null,
+                    Status = losers.Count > 1 ? MatchStatus.Pending : MatchStatus.Completed,
+                    WinnerID = losers.Count > 1 ? null : losers[0] // Auto-win if only 1 loser
                 };
 
                 _context.Matches.Add(thirdPlaceMatch);
