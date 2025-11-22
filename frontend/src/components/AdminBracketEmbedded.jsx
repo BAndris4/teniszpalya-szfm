@@ -333,7 +333,7 @@ function RoundColumn({ round, roundIndex, isFinal, side, isAdmin, savingId, onSu
             {!isFinal && matchIdx % 2 === 0 && matchIdx + 1 < round.matches.length && (
               <div
                 className="absolute left-[calc(100%+46.5px)] bg-slate-700"
-                style={{ top: 'calc(50% - 1.5px)', width: '3px', height: `${gapBetweenMatches + matchHeight + 1.5}px` }}
+                style={{ top: 'calc(50% - 1px)', width: '3px', height: `${gapBetweenMatches + matchHeight - 1}px` }}
               />
             )}
             <MatchCard
