@@ -13,42 +13,68 @@ namespace Teniszpalya.API.Services
             int totalSlots = GetNextPowerOfTwo(participants.Count);
             int byeCount = totalSlots - participants.Count;
             
-            // Add BYEs (null players)
-            for (int i = 0; i < byeCount; i++)
-            {
-                participants.Add(null);
-            }
+            // We want to distribute BYEs such that they are paired with players where possible.
+            // Strategy:
+            // 1. Matches with (Player vs BYE) -> Player advances automatically
+            // 2. Matches with (Player vs Player) -> Normal match
+            // 3. Matches with (BYE vs BYE) -> Should only happen if very few players (e.g. 2 players in 8 slots)
             
-            // Shuffle participants for fairness (optional)
-            // participants = participants.OrderBy(x => Guid.NewGuid()).ToList();
-            
-            // Generate first round matches
+            int matchesWithPlayerAndBye = Math.Min(participants.Count, byeCount);
+            int matchesWithTwoPlayers = (participants.Count - matchesWithPlayerAndBye) / 2;
+            int matchesWithTwoByes = (byeCount - matchesWithPlayerAndBye) / 2;
+
+            var playerQueue = new Queue<int?>(participants);
             int matchNumber = 1;
-            for (int i = 0; i < participants.Count; i += 2)
+
+            // 1. Create matches with Player vs BYE
+            for (int i = 0; i < matchesWithPlayerAndBye; i++)
             {
                 var match = new Match
                 {
                     TournamentID = tournamentId,
                     Round = 1,
                     MatchNumber = matchNumber++,
-                    Player1ID = participants[i],
-                    Player2ID = participants[i + 1],
+                    Player1ID = playerQueue.Dequeue(),
+                    Player2ID = null, // BYE
+                    Status = MatchStatus.Completed,
+                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                };
+                match.WinnerID = match.Player1ID; // Auto-advance
+                matches.Add(match);
+            }
+
+            // 2. Create matches with Player vs Player
+            for (int i = 0; i < matchesWithTwoPlayers; i++)
+            {
+                var match = new Match
+                {
+                    TournamentID = tournamentId,
+                    Round = 1,
+                    MatchNumber = matchNumber++,
+                    Player1ID = playerQueue.Dequeue(),
+                    Player2ID = playerQueue.Dequeue(),
                     Status = MatchStatus.Pending,
                     CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
                 };
-                
-                // Auto-advance if one player is BYE
-                if (match.Player1ID == null)
+                matches.Add(match);
+            }
+
+            // 3. Create matches with BYE vs BYE (Ghost matches)
+            for (int i = 0; i < matchesWithTwoByes; i++)
+            {
+                var match = new Match
                 {
-                    match.WinnerID = match.Player2ID;
-                    match.Status = MatchStatus.Completed;
-                }
-                else if (match.Player2ID == null)
-                {
-                    match.WinnerID = match.Player1ID;
-                    match.Status = MatchStatus.Completed;
-                }
-                
+                    TournamentID = tournamentId,
+                    Round = 1,
+                    MatchNumber = matchNumber++,
+                    Player1ID = null,
+                    Player2ID = null,
+                    Status = MatchStatus.Completed,
+                    CreatedAt = DateTimeOffset.UtcNow.ToUnixTimeSeconds()
+                };
+                // No winner, or null winner. 
+                // If we set WinnerID = null and Status = Completed, the propagation logic needs to handle it.
+                // But for safety, let's leave WinnerID null.
                 matches.Add(match);
             }
             

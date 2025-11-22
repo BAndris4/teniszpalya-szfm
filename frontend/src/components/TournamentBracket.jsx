@@ -102,7 +102,7 @@ export default function TournamentBracket({ tournamentId, onClose }) {
   }
 
   const totalRounds = bracket.rounds.length;
-  
+
   // Split rounds for proper two-sided bracket like FIFA World Cup
   let leftRounds = [];
   let rightRounds = [];
@@ -115,37 +115,37 @@ export default function TournamentBracket({ tournamentId, onClose }) {
     // 4 players: split first round left/right, finals in middle
     const firstRound = bracket.rounds[0];
     const half = Math.ceil(firstRound.matches.length / 2);
-    
+
     leftRounds = [{
       ...firstRound,
       matches: firstRound.matches.slice(0, half)
     }];
-    
+
     rightRounds = [{
       ...firstRound,
       matches: firstRound.matches.slice(half)
     }];
-    
+
     middleRounds = [bracket.rounds[1]];
   } else {
-    
+
     const numEarlyRounds = totalRounds - 2; // All except semi and finals
-    
+
     for (let i = 0; i < numEarlyRounds; i++) {
       const round = bracket.rounds[i];
       const half = Math.ceil(round.matches.length / 2);
-      
+
       leftRounds.push({
         ...round,
         matches: round.matches.slice(0, half)
       });
-      
+
       rightRounds.push({
         ...round,
         matches: round.matches.slice(half)
       });
     }
-    
+
     // Semi-finals and finals go in the middle
     middleRounds = bracket.rounds.slice(numEarlyRounds);
   }
@@ -182,13 +182,12 @@ export default function TournamentBracket({ tournamentId, onClose }) {
             return (
               <div
                 key={`badge-${idx}`}
-                className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide border transition-colors ${
-                  isActive
+                className={`px-3 py-1 rounded-full text-xs font-semibold tracking-wide border transition-colors ${isActive
                     ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-sm'
                     : isDone
-                    ? 'bg-green-50 border-green-300 text-green-700'
-                    : 'bg-gray-100 border-gray-300 text-gray-600'
-                }`}
+                      ? 'bg-green-50 border-green-300 text-green-700'
+                      : 'bg-gray-100 border-gray-300 text-gray-600'
+                  }`}
               >
                 {idx + 1 < allRounds.length ? `Round ${idx + 1}` : 'Final'}
               </div>
@@ -314,8 +313,8 @@ function RoundColumn({ round, roundIndex, isFinal, totalInSide, side = "left", i
                     (side === "left"
                       ? "right-[-50px] top-[25%] bottom-[25%]"
                       : side === "right"
-                      ? "left-[-50px] top-[25%] bottom-[25%]"
-                      : "right-[-50px] top-[25%] bottom-[25%]")
+                        ? "left-[-50px] top-[25%] bottom-[25%]"
+                        : "right-[-50px] top-[25%] bottom-[25%]")
                   }
                 />
               </>
@@ -352,8 +351,8 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   const statusBorder = isCompleted
     ? 'border-green-400'
     : match.player1 && match.player2
-    ? 'border-yellow-400'
-    : 'border-gray-300';
+      ? 'border-yellow-400'
+      : 'border-gray-300';
 
   const activeGlow = isActiveRound && !isCompleted ? 'shadow-[0_0_0_3px_rgba(59,130,246,0.15)]' : '';
 
@@ -380,11 +379,10 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
       )}
       {/* Player 1 */}
       <div
-        className={`border-b px-3 py-2 ${
-          isCompleted && winner?.id === match.player1?.id
+        className={`border-b px-3 py-2 ${isCompleted && winner?.id === match.player1?.id
             ? "bg-blue-100 font-semibold"
             : ""
-        }`}
+          }`}
       >
         <p className="text-sm text-gray-800 flex items-center gap-1">
           {isCompleted && winner?.id === match.player1?.id && (
@@ -396,11 +394,10 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
 
       {/* Player 2 */}
       <div
-        className={`px-3 py-2 ${
-          isCompleted && winner?.id === match.player2?.id
+        className={`px-3 py-2 ${isCompleted && winner?.id === match.player2?.id
             ? "bg-blue-100 font-semibold"
             : ""
-        }`}
+          }`}
       >
         <p className="text-sm text-gray-800 flex items-center gap-1">
           {isCompleted && winner?.id === match.player2?.id && (

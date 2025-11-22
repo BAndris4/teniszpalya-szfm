@@ -58,7 +58,7 @@ namespace Teniszpalya.API.Controllers
             Response.Cookies.Append("AuthToken", jwt, new CookieOptions
             {
                 HttpOnly = true,
-                Secure = true,
+                Secure = Request.IsHttps,
                 SameSite = SameSiteMode.Strict,
                 Expires = DateTime.UtcNow.AddHours(1)
             });
@@ -74,7 +74,7 @@ namespace Teniszpalya.API.Controllers
                 new CookieOptions
                 {
                     HttpOnly = true,
-                    Secure = true,
+                    Secure = Request.IsHttps,
                     SameSite = SameSiteMode.Strict,
                     Expires = DateTime.UtcNow.AddDays(-1)
                 });

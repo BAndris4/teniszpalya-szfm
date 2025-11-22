@@ -124,18 +124,18 @@ function TournamentBracketPage() {
 
   if (displayBracket && displayBracket.rounds.length > 0) {
     const finalRound = displayBracket.rounds[displayBracket.rounds.length - 1];
-    
+
     // Ha van döntő meccs
     if (finalRound.matches.length === 1) {
       const finalMatch = finalRound.matches[0];
-      
+
       // Ha a meccs lezárult (status === 2) és van győztese
       if (finalMatch.status === 2 && finalMatch.winner) {
         if (!champion) {
-            champion = finalMatch.winner;
+          champion = finalMatch.winner;
         }
-        runnerUp = finalMatch.winner.id === finalMatch.player1?.id 
-          ? finalMatch.player2 
+        runnerUp = finalMatch.winner.id === finalMatch.player1?.id
+          ? finalMatch.player2
           : finalMatch.player1;
       }
     }
@@ -186,16 +186,16 @@ function TournamentBracketPage() {
   return (
     <ReserveMenuProvider>
       <div className="relative bg-white overflow-hidden min-h-screen font-['Poppins',sans-serif]">
-      <motion.div
-        className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
-        animate={topBlob}
-        transition={{ duration: 1.2, ease: "easeInOut" }}
-      />
-      <motion.div
-        className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
-        animate={bottomBlob}
-        transition={{ duration: 1.2, ease: "easeInOut" }}
-      />
+        <motion.div
+          className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
+          animate={topBlob}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+        />
+        <motion.div
+          className="w-[50vw] h-[50vw] bg-light-green rounded-full fixed blur-[200px] pointer-events-none z-0"
+          animate={bottomBlob}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
+        />
         <div className="relative z-10">
           <Navbar />
           <div className="pt-32 px-6 pb-12">
@@ -207,7 +207,7 @@ function TournamentBracketPage() {
             >
               {/* Tournament Info Header */}
               {tournament && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5 }}
@@ -235,7 +235,7 @@ function TournamentBracketPage() {
                         </p>
                       )}
                       <div className="flex flex-wrap gap-3">
-                         {/* Info Badges */}
+                        {/* Info Badges */}
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
                           <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
                             <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
@@ -261,7 +261,7 @@ function TournamentBracketPage() {
                           </span>
                         </div>
                         <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green/5 border border-green/20">
-                           <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
+                          <svg className="w-5 h-5 text-dark-green" fill="currentColor" viewBox="0 0 20 20">
                             <path d="M8.433 7.418c.155-.103.346-.196.567-.267v1.698a2.305 2.305 0 01-.567-.267C8.07 8.34 8 8.114 8 8c0-.114.07-.34.433-.582zM11 12.849v-1.698c.22.071.412.164.567.267.364.243.433.468.433.582 0 .114-.07.34-.433.582a2.305 2.305 0 01-.567.267z" />
                             <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-13a1 1 0 10-2 0v.092a4.535 4.535 0 00-1.676.662C6.602 6.234 6 7.009 6 8c0 .99.602 1.765 1.324 2.246.48.32 1.054.545 1.676.662v1.941c-.391-.127-.68-.317-.843-.504a1 1 0 10-1.51 1.31c.562.649 1.413 1.076 2.353 1.253V15a1 1 0 102 0v-.092a4.535 4.535 0 001.676-.662C13.398 13.766 14 12.991 14 12c0-.99-.602-1.765-1.324-2.246A4.535 4.535 0 0011 9.092V7.151c.391.127.68.317.843.504a1 1 0 101.511-1.31c-.563-.649-1.413-1.076-2.354-1.253V5z" clipRule="evenodd" />
                           </svg>
@@ -333,7 +333,7 @@ function TournamentBracketPage() {
                       );
                     })
                   )}
-                  
+
                   {/* 3rd Place Match */}
                   {thirdPlaceMatch && (
                     <div className="ml-12 flex flex-col">
@@ -357,10 +357,10 @@ function TournamentBracketPage() {
               {/* --- TOP 3 PODIUM SECTION --- */}
               {champion && (
                 <div className="mt-16 mb-8">
-                  <TournamentPodium 
-                    first={champion} 
-                    second={runnerUp} 
-                    third={thirdPlaceWinner} 
+                  <TournamentPodium
+                    first={champion}
+                    second={runnerUp}
+                    third={thirdPlaceWinner}
                   />
                 </div>
               )}
@@ -381,14 +381,14 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
     : ["Round 1", "Quarterfinals", "Semifinals", "Finals"];
   const displayName = isFinal ? "Finals" : baseNames[roundIndex] || `Round ${roundIndex + 1}`;
   return (
-    <motion.div 
-      className="flex flex-col" 
+    <motion.div
+      className="flex flex-col"
       style={{ marginTop: `${marginTop}px` }}
       initial={{ opacity: 0, x: -30 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, delay: roundIndex * 0.1 }}
     >
-      <motion.h3 
+      <motion.h3
         className="mb-6 text-center text-lg font-bold text-dark-green"
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
@@ -406,12 +406,12 @@ function RoundColumn({ round, roundIndex, isFinal, side = "left", isAdmin, savin
               <div className="absolute left-full bg-green" style={{ top: 'calc(50% - 1.5px)', height: '3px', width: '46.5px' }} />
             )}
             {!isFinal && matchIdx % 2 === 0 && matchIdx + 1 < round.matches.length && (
-              <div 
+              <div
                 className="absolute left-[calc(100%+46.5px)] bg-green"
-                style={{ 
+                style={{
                   top: 'calc(50% - 1.5px)',
                   width: '3px',
-                  height: `${gapBetweenMatches + matchHeight +3}px`
+                  height: `${gapBetweenMatches + matchHeight + 3}px`
                 }}
               />
             )}
@@ -445,7 +445,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
   const bottomWinner = isCompleted && winner?.id === match.player2?.id;
 
   return (
-    <motion.div 
+    <motion.div
       className="relative w-56 h-24 rounded-xl border-2 border-gray-200 bg-white shadow-md transition-all group flex flex-col justify-center overflow-hidden"
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
@@ -453,7 +453,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
     >
       {topWinner && <div className="absolute inset-x-0 top-0 h-1/2 bg-green/10 rounded-t-xl pointer-events-none" />}
       {bottomWinner && <div className="absolute inset-x-0 bottom-0 h-1/2 bg-green/10 rounded-b-xl pointer-events-none" />}
-      
+
       <motion.div className={`border-b border-gray-100 px-4 py-3 transition-all relative flex items-center justify-between ${topWinner ? "font-bold text-dark-green" : "text-gray-700 hover:bg-gray-50"}`}>
         <p className="text-sm flex items-center gap-2">
           {isCompleted && winner?.id === match.player1?.id && (
@@ -504,7 +504,7 @@ function MatchCard({ match, side, isAdmin, savingId, onSubmitResult, scores, set
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-               {savingId === match.id ? "..." : "P2 wins"}
+              {savingId === match.id ? "..." : "P2 wins"}
             </motion.button>
           </div>
         </motion.div>
@@ -526,9 +526,9 @@ function TournamentPodium({ first, second, third }) {
 
   const itemVariants = {
     hidden: { opacity: 0, y: 50, scale: 0.9 },
-    visible: { 
-      opacity: 1, 
-      y: 0, 
+    visible: {
+      opacity: 1,
+      y: 0,
       scale: 1,
       transition: { type: "spring", stiffness: 100, damping: 12 }
     }
@@ -537,7 +537,7 @@ function TournamentPodium({ first, second, third }) {
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Törölve lett az ikon/emoji, csak sima szöveg maradt */}
-      <motion.h2 
+      <motion.h2
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-2xl font-bold text-dark-green mb-10 text-center"
@@ -545,19 +545,19 @@ function TournamentPodium({ first, second, third }) {
         Tournament Results
       </motion.h2>
 
-      <motion.div 
+      <motion.div
         className="flex items-end justify-center gap-4 md:gap-8 pb-4"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
-        
+
         {/* 2nd Place - Height reduced from h-48/64 to h-32/44 */}
-        <PodiumStep 
-          player={second} 
-          rank={2} 
-          height="h-32 md:h-44" 
-          color="bg-slate-200" 
+        <PodiumStep
+          player={second}
+          rank={2}
+          height="h-32 md:h-44"
+          color="bg-slate-200"
           borderColor="border-slate-300"
           textColor="text-slate-600"
           badgeColor="bg-slate-400"
@@ -566,48 +566,48 @@ function TournamentPodium({ first, second, third }) {
 
         {/* 1st Place - Height reduced from h-64/80 to h-44/60 */}
         <div className="relative z-10 -mx-2 mb-2">
-            {/* Confetti for the winner */}
-            <div className="absolute inset-0 overflow-visible pointer-events-none">
-              {[...Array(12)].map((_, i) => (
-                <motion.span
-                  key={i}
-                  className="absolute w-2 h-2 rounded-full"
-                  style={{
-                    backgroundColor: ['#fbbf24', '#f59e0b', '#16a34a', '#34d399'][i % 4],
-                    top: '0%',
-                    left: '50%'
-                  }}
-                  initial={{ x: 0, y: 0, opacity: 0 }}
-                  animate={{
-                    x: (Math.random() - 0.5) * 200,
-                    y: (Math.random() - 1) * 150 - 50,
-                    opacity: [0, 1, 0],
-                    rotate: Math.random() * 360
-                  }}
-                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, delay: i * 0.2 }}
-                />
-              ))}
-            </div>
+          {/* Confetti for the winner */}
+          <div className="absolute inset-0 overflow-visible pointer-events-none">
+            {[...Array(12)].map((_, i) => (
+              <motion.span
+                key={i}
+                className="absolute w-2 h-2 rounded-full"
+                style={{
+                  backgroundColor: ['#fbbf24', '#f59e0b', '#16a34a', '#34d399'][i % 4],
+                  top: '0%',
+                  left: '50%'
+                }}
+                initial={{ x: 0, y: 0, opacity: 0 }}
+                animate={{
+                  x: (Math.random() - 0.5) * 200,
+                  y: (Math.random() - 1) * 150 - 50,
+                  opacity: [0, 1, 0],
+                  rotate: Math.random() * 360
+                }}
+                transition={{ duration: 2, repeat: Infinity, repeatDelay: 3, delay: i * 0.2 }}
+              />
+            ))}
+          </div>
 
-            <PodiumStep 
-              player={first} 
-              rank={1} 
-              height="h-44 md:h-60" 
-              color="bg-yellow-100" 
-              borderColor="border-yellow-300"
-              textColor="text-yellow-700"
-              badgeColor="bg-yellow-500"
-              isWinner={true}
-              variants={itemVariants}
-            />
+          <PodiumStep
+            player={first}
+            rank={1}
+            height="h-44 md:h-60"
+            color="bg-yellow-100"
+            borderColor="border-yellow-300"
+            textColor="text-yellow-700"
+            badgeColor="bg-yellow-500"
+            isWinner={true}
+            variants={itemVariants}
+          />
         </div>
 
         {/* 3rd Place - Height reduced from h-32/48 to h-24/32 */}
-        <PodiumStep 
-          player={third} 
-          rank={3} 
-          height="h-24 md:h-32" 
-          color="bg-orange-100" 
+        <PodiumStep
+          player={third}
+          rank={3}
+          height="h-24 md:h-32"
+          color="bg-orange-100"
           borderColor="border-orange-300"
           textColor="text-orange-700"
           badgeColor="bg-orange-400"
@@ -622,7 +622,7 @@ function PodiumStep({ player, rank, height, color, borderColor, textColor, badge
   return (
     <motion.div className="flex flex-col items-center group" variants={variants}>
       <div className="mb-4 flex flex-col items-center text-center z-20">
-        <motion.div 
+        <motion.div
           className={`relative rounded-full flex items-center justify-center shadow-lg mb-3 transition-transform
           ${isWinner ? 'w-24 h-24 border-4 border-yellow-400 bg-white' : 'w-16 h-16 border-2 border-white bg-gray-50'}
           `}
@@ -641,10 +641,10 @@ function PodiumStep({ player, rank, height, color, borderColor, textColor, badge
       </div>
 
       <div className={`w-24 md:w-32 ${height} rounded-t-2xl border-t-4 border-x border-b-0 shadow-sm relative overflow-hidden ${color} ${borderColor}`}>
-         <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-60" />
-         <div className={`absolute bottom-4 w-full text-center text-6xl font-black opacity-10 select-none ${textColor}`}>
-            {rank}
-         </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-60" />
+        <div className={`absolute bottom-4 w-full text-center text-6xl font-black opacity-10 select-none ${textColor}`}>
+          {rank}
+        </div>
       </div>
     </motion.div>
   );
