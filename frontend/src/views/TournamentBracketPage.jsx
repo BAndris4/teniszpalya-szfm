@@ -118,7 +118,6 @@ function TournamentBracketPage() {
   const thirdPlaceMatch = displayBracket?.thirdPlaceMatch;
 
   // --- LOGIKA A DOBOGÓSOK MEGHATÁROZÁSÁHOZ ---
-  // Javítva: Manuálisan is megkeressük a győztest, ha a backend nem küldte a champion mezőt
   let champion = displayBracket?.champion;
   let runnerUp = null;
   let thirdPlaceWinner = null;
@@ -359,7 +358,6 @@ function TournamentBracketPage() {
               </motion.div>
 
               {/* --- TOP 3 PODIUM SECTION --- */}
-              {/* Csak akkor rajzolja ki, ha van bajnok. A logika fönn garantálja, hogy ha lement a döntő, lesz champion. */}
               {champion && (
                 <div className="mt-16 mb-8">
                   <TournamentPodium 
@@ -540,14 +538,31 @@ function TournamentPodium({ first, second, third }) {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center">
+    <div className="flex flex-col items-center justify-center mt-12">
       <motion.h2 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-bold text-dark-green mb-10 flex items-center gap-2"
+        className="text-2xl font-bold text-dark-green mb-8 text-center"
       >
-        <span className="text-3xl">🏆</span> Tournament Results
+        Tournament Results
       </motion.h2>
+
+      {/* Icon Trophy Outline - Méret csökkentve h-16 w-16-ra */}
+      <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.1 }}
+          className="mb-6"
+      >
+          <svg className="h-16 w-16 text-dark-green drop-shadow-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+            <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+            <path d="M4 22h16" />
+            <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+            <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+            <path d="M18 2v7c0 1.1-.9 2-2 2H8c-1.1 0-2-.9-2-2V2" />
+          </svg>
+      </motion.div>
 
       <motion.div 
         className="flex items-end justify-center gap-4 md:gap-8 pb-4"
@@ -560,16 +575,17 @@ function TournamentPodium({ first, second, third }) {
         <PodiumStep 
           player={second} 
           rank={2} 
-          height="h-48 md:h-64" 
-          color="bg-slate-200" 
+          height="h-36 md:h-48" 
+          color="bg-slate-100" 
           borderColor="border-slate-300"
-          textColor="text-slate-600"
+          textColor="text-slate-400"
           badgeColor="bg-slate-400"
           variants={itemVariants}
         />
 
         {/* 1st Place */}
         <div className="relative z-10 -mx-2 mb-2">
+            {/* Confetti for the winner */}
             <div className="absolute inset-0 overflow-visible pointer-events-none">
               {[...Array(12)].map((_, i) => (
                 <motion.span
@@ -595,10 +611,10 @@ function TournamentPodium({ first, second, third }) {
             <PodiumStep 
               player={first} 
               rank={1} 
-              height="h-64 md:h-80" 
-              color="bg-yellow-100" 
+              height="h-48 md:h-64" 
+              color="bg-yellow-50" 
               borderColor="border-yellow-300"
-              textColor="text-yellow-700"
+              textColor="text-yellow-400"
               badgeColor="bg-yellow-500"
               isWinner={true}
               variants={itemVariants}
@@ -609,10 +625,10 @@ function TournamentPodium({ first, second, third }) {
         <PodiumStep 
           player={third} 
           rank={3} 
-          height="h-32 md:h-48" 
-          color="bg-orange-100" 
+          height="h-24 md:h-32" 
+          color="bg-orange-50" 
           borderColor="border-orange-300"
-          textColor="text-orange-700"
+          textColor="text-orange-300"
           badgeColor="bg-orange-400"
           variants={itemVariants}
         />
@@ -624,28 +640,30 @@ function TournamentPodium({ first, second, third }) {
 function PodiumStep({ player, rank, height, color, borderColor, textColor, badgeColor, isWinner, variants }) {
   return (
     <motion.div className="flex flex-col items-center group" variants={variants}>
-      <div className="mb-4 flex flex-col items-center text-center z-20">
+      {/* Avatar / Info */}
+      <div className="mb-3 flex flex-col items-center text-center z-20">
         <motion.div 
-          className={`relative rounded-full flex items-center justify-center shadow-lg mb-3 transition-transform
-          ${isWinner ? 'w-24 h-24 border-4 border-yellow-400 bg-white' : 'w-16 h-16 border-2 border-white bg-gray-50'}
+          className={`relative rounded-full flex items-center justify-center shadow-sm mb-2 transition-transform bg-white
+          ${isWinner ? 'w-20 h-20 border-[3px] border-yellow-400' : 'w-14 h-14 border-2 border-gray-200'}
           `}
           whileHover={{ y: -5 }}
         >
-          <span className={`font-bold ${isWinner ? 'text-2xl text-dark-green' : 'text-lg text-gray-500'}`}>
+          <span className={`font-bold ${isWinner ? 'text-xl text-dark-green' : 'text-base text-gray-500'}`}>
             {player?.name?.charAt(0).toUpperCase() || "?"}
           </span>
-          <div className={`absolute -bottom-2 rounded-full px-2 py-0.5 text-xs font-bold text-white shadow-sm ${badgeColor}`}>
+          <div className={`absolute -bottom-1.5 rounded-full px-2 py-0.5 text-[10px] font-bold text-white shadow-sm ${badgeColor}`}>
             #{rank}
           </div>
         </motion.div>
-        <span className={`font-bold px-2 py-1 rounded-lg bg-white/50 backdrop-blur-sm ${isWinner ? 'text-xl text-dark-green' : 'text-sm text-gray-600'} max-w-[140px] truncate`}>
+        <span className={`font-bold px-2 py-0.5 rounded-lg bg-white/70 backdrop-blur-sm ${isWinner ? 'text-lg text-dark-green' : 'text-xs text-gray-600'} max-w-[120px] truncate`}>
           {player?.name || "TBD"}
         </span>
       </div>
 
-      <div className={`w-24 md:w-32 ${height} rounded-t-2xl border-t-4 border-x border-b-0 shadow-sm relative overflow-hidden ${color} ${borderColor}`}>
-         <div className="absolute inset-0 bg-gradient-to-b from-white/50 to-transparent opacity-60" />
-         <div className={`absolute bottom-4 w-full text-center text-6xl font-black opacity-10 select-none ${textColor}`}>
+      {/* The Bar */}
+      <div className={`w-20 md:w-28 ${height} rounded-t-xl border-t-4 border-x border-b-0 shadow-sm relative overflow-hidden ${color} ${borderColor}`}>
+         <div className="absolute inset-0 bg-gradient-to-b from-white/60 to-transparent opacity-50" />
+         <div className={`absolute bottom-2 w-full text-center text-5xl font-black opacity-20 select-none ${textColor}`}>
             {rank}
          </div>
       </div>
