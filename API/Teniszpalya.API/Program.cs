@@ -153,7 +153,8 @@ public class Program
                 new Court { Material = "Clay", Outdoors = true },
                 new Court { Material = "Hard", Outdoors = true },
                 new Court { Material = "Grass", Outdoors = true },
-                new Court { Material = "Hard", Outdoors = false }
+                new Court { Material = "Hard", Outdoors = false },
+                new Court { Material = "Clay", Outdoors = true }
             };
 
             context.Courts.AddRange(courts);

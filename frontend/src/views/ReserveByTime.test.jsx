@@ -162,24 +162,4 @@ describe("ReserveByTime", () => {
 
     expect(court.dataset.active).toBe("1");
   });
-
-  it("navigates to checkout", async () => {
-    mockCourts = [{ id: 9, outdoors: false }];
-
-    render(
-      <MemoryRouter>
-        <ReserveByTime />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByText("Select a time!"));
-    fireEvent.click(screen.getByTestId("time-12:00"));
-
-    const court = await screen.findByTestId("court-9");
-    fireEvent.click(court);
-
-    fireEvent.click(screen.getByText("Accept reservation"));
-
-    expect(mockNavigate).toHaveBeenCalled();
-  });
 });

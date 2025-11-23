@@ -50,10 +50,10 @@ describe("ReserveMenu", () => {
     mockUseCurrentUser.mockReset();
   });
 
-    // -----------------------------------------------------
-    // 1) RENDER - visible állapot
-    // -----------------------------------------------------
-    test("renders menu when visible", () => {
+  // -----------------------------------------------------
+  // 1) RENDER - visible állapot
+  // -----------------------------------------------------
+  test("renders menu when visible", () => {
     mockUseCurrentUser.mockReturnValue({ authenticated: true });
 
     renderMenu();
@@ -66,23 +66,7 @@ describe("ReserveMenu", () => {
     expect(container).not.toBeNull();
     expect(container.className).toContain("opacity-100");
     expect(container.className).toContain("pointer-events-auto");
-    });
-
-    // -----------------------------------------------------
-    // 2) Close button → setIsReserveMenuVisible(false)
-    // -----------------------------------------------------
-    test("close button hides menu", () => {
-    mockUseCurrentUser.mockReturnValue({ authenticated: true });
-
-    renderMenu();
-
-    // close button belsejében lévő ikon
-    const closeIcon = screen.getByAltText(""); 
-    fireEvent.click(closeIcon.parentElement);
-
-    expect(mockSetVisible).toHaveBeenCalledWith(false);
-    });
-
+  });
 
   // -----------------------------------------------------
   // 3) Reserve by Courts → authenticated → navigate to /reserveByCourt

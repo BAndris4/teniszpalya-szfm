@@ -9,7 +9,7 @@ Feature: F01 – Landing oldali szekciók összeállítása
   Scenario: Sikeres betöltéskor minden szekció és pályakártya megjelenik
     Given I navigate to the "/" útvonal
     When the Navbar, Hero, Courts, PriceList and Contact komponensek mount in order
-    And the Courts szekció lekéri a "http://localhost:5044/api/Courts" végpontot és négy vagy több pályát kap
+    And the Courts szekció lekéri a "/api/Courts" végpontot és négy vagy több pályát kap
     Then the Courts slider renders a CourtCard for each returned court and enables the navigation gombok
     And the PriceList szekció előre definiált szezonális árakat mutat
     And the Contact szekció placeholder komponense renderelődik a landing oldalon
